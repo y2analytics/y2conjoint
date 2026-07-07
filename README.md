@@ -13,10 +13,10 @@ conjoint data
 
 ## Installation
 
-You can install the development version of y2print from
+You can install the development version of y2conjoint from
 [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
-pak::pak("y2analytics/y2print")
+pak::pak("y2analytics/y2conjoint")
 ```
