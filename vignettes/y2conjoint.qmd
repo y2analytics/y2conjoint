@@ -215,6 +215,8 @@ market <- competitive_set(
   name = "Launch"
 )
 
+market 
+
 shares <- run_scenario(cjt, market)
 shares
 ```

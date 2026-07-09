@@ -63,8 +63,12 @@ S7::method(print, competitive_set) <- function(x, ...) {
     " unnamed spec",
     if (n_unnamed == 1) "" else "s"
   )
-  # cli collapses this vector with commas and a trailing "and".
-  descriptor <- c(named_names, if (n_unnamed > 0) unnamed_phrase)
+  # Green spec names to match their own print method; cli collapses this vector
+  # with commas and a trailing "and".
+  descriptor <- c(
+    fmt_object_name(named_names),
+    if (n_unnamed > 0) unnamed_phrase
+  )
 
   cat(
     cli::cli_fmt(
@@ -75,10 +79,12 @@ S7::method(print, competitive_set) <- function(x, ...) {
     "\n",
     sep = ""
   )
-  # Print each spec indented so the set reads as a set of products.
+  # Print each spec indented so the set reads as a set of products. Reuse
+  # format_spec() (rather than capturing print output) so the specs keep the
+  # colour and bold weight of their own print method.
   for (s in specs) {
     cat("\n")
-    cat(paste0("  ", utils::capture.output(print(s))), sep = "\n")
+    cat(paste0("  ", format_spec(s)), sep = "\n")
   }
   invisible(x)
 }

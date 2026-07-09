@@ -290,8 +290,10 @@ print_conjoint_df <- function(x, ...) {
   collections <- conjoint_collections(x)
   names <- purrr::map_chr(collections, \(cl) cl@name)
   ordered <- purrr::map_lgl(collections, is_ordered)
-  labels <- names
-  labels[ordered] <- paste0(names[ordered], "*")
+  # One collection per line; mark ordered ones with a dim annotation rather than
+  # an asterisk and legend.
+  labels <- fmt_collection(names)
+  labels[ordered] <- paste0(labels[ordered], fmt_annotation(" (ordered)"))
   n_extra <- ncol(x) - length(protected_cols(x))
 
   cat(
@@ -299,9 +301,9 @@ print_conjoint_df <- function(x, ...) {
       cli::cli_text(
         "{.cls conjoint_df}: {length(collections)} collection{?s}"
       )
-      cli::cli_text("Collections: {.field {labels}}")
+      cli::cli_ul(labels)
       cli::cli_text(
-        "(* = ordered), NONE = {.field {conjoint_none(x)}}, {n_extra} extra column{?s}"
+        "NONE = {.field {conjoint_none(x)}}, {n_extra} extra column{?s}"
       )
     }),
     sep = "\n"
