@@ -67,9 +67,17 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #' @param scaling_factor A numeric multiplier applied to all utilities before the
 #'   softmax. Values above 1 sharpen the choice probabilities toward the highest
 #'   utility; values below 1 flatten them. Defaults to `1`.
+#' @param .by Optional <[`tidy-select`][dplyr::dplyr_tidy_select]> columns to
+#'   compute shares within. Each selected column is treated *marginally*: the
+#'   sample is split by that column's values and shares are computed within each
+#'   value, then the results for every selected column are stacked. Defaults to
+#'   `NULL` (whole sample).
 #'
-#' @return A one-row tibble with one `share_*` column per product in the
-#'   competitive set.
+#' @return When `.by` is `NULL`, a one-row tibble with one `share_*` column per
+#'   product in the competitive set. When `.by` is supplied, a tibble with one
+#'   row per grouping variable and value, carrying `group_var` (the grouping
+#'   column), `group_level` (its value, as a string), `n` (respondents in the
+#'   subgroup), and the `share_*` columns.
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
 #' market <- competitive_set(
@@ -81,18 +89,77 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #'
 #' # Sharpen the shares toward the most attractive product.
 #' run_scenario(cjt, market, scaling_factor = 2)
+#'
+#' # Shares within each region, then within each gender, stacked.
+#' run_scenario(cjt, market, .by = c(region, gender))
 #' @export
 run_scenario <- function(
   x,
   competitive_set,
   combine_fn = pmax,
-  scaling_factor = 1
+  scaling_factor = 1,
+  .by = NULL
 ) {
   specs <- competitive_set@specs
   check_specs_columns(x, specs)
   check_combine_fn(combine_fn, x)
   # From here the inputs are validated, so the rest is pure computation.
 
+  by_vars <- names(tidyselect::eval_select(rlang::enquo(.by), x))
+  if (length(by_vars) == 0) {
+    return(scenario_shares(x, specs, combine_fn, scaling_factor))
+  }
+
+  # Treat each grouping column marginally: split the sample by its values,
+  # score every subgroup, and stack the per-column results.
+  rows <- purrr::map(by_vars, function(var) {
+    values <- x[[var]]
+    # Survey data often arrives with SPSS-style value labels (a haven_labelled
+    # column of integer codes). Group on the labels so the output reads in human
+    # terms rather than as bare codes.
+    if (inherits(values, "haven_labelled")) {
+      values <- haven::as_factor(values)
+    }
+    purrr::map(subgroup_levels(values), function(level) {
+      in_group <- if (is.na(level)) {
+        is.na(values)
+      } else {
+        !is.na(values) & values == level
+      }
+      subgroup <- dplyr::filter(x, in_group)
+      dplyr::bind_cols(
+        tibble::tibble(
+          group_var = var,
+          group_level = as.character(level),
+          n = nrow(subgroup)
+        ),
+        scenario_shares(subgroup, specs, combine_fn, scaling_factor)
+      )
+    })
+  })
+  dplyr::bind_rows(purrr::list_flatten(rows))
+}
+
+# The distinct values of a grouping column, in the order subgroups should be
+# reported. Factors (including converted labelled columns) keep their level
+# order and drop unused levels; other types are sorted. A missing value, when
+# present, becomes its own subgroup listed last.
+#' @keywords internal
+subgroup_levels <- function(values) {
+  if (is.factor(values)) {
+    present <- intersect(levels(values), as.character(values))
+    if (anyNA(values)) {
+      present <- c(present, NA_character_)
+    }
+    return(present)
+  }
+  sort(unique(values), na.last = TRUE)
+}
+
+# Score one (sub)sample: one utility column per product plus NONE, softmax to
+# per-respondent choice probabilities, then average to mean shares.
+#' @keywords internal
+scenario_shares <- function(x, specs, combine_fn, scaling_factor) {
   # One utility column per product (rows = respondents).
   product_utilities <- purrr::map(
     specs,

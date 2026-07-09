@@ -21,7 +21,9 @@ Imports:
     S7,
     cli,
     dplyr,
+    haven,
     purrr,
     rlang,
-    tibble
+    tibble,
+    tidyselect
 LazyData: true

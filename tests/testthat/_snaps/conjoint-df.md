@@ -61,8 +61,8 @@
     Output
       <conjoint_df>: 5 collections
       Collections: Brand, Price*, Battery*, Storage*, and Color
-      (* = ordered), NONE = NONE, 5 extra columns
-      # A tibble: 200 x 21
+      (* = ordered), NONE = NONE, 6 extra columns
+      # A tibble: 200 x 22
          respondent_id Northwind Cascade Meridian `$199` `$299` `$399` `10 hours`
                  <int>     <dbl>   <dbl>    <dbl>  <dbl>  <dbl>  <dbl>      <dbl>
        1             1    -0.178   0.362    0.042  0.596 -0.573 -1.05      -0.387
@@ -76,9 +76,10 @@
        9             9     0.249   1.62    -0.262  0.656 -0.136 -0.5       -0.608
       10            10     0.23   -0.212   -1.30   0.549 -0.666 -0.428     -0.473
       # i 190 more rows
-      # i 13 more variables: `20 hours` <dbl>, `30 hours` <dbl>, `128 GB` <dbl>,
+      # i 14 more variables: `20 hours` <dbl>, `30 hours` <dbl>, `128 GB` <dbl>,
       #   `256 GB` <dbl>, `512 GB` <dbl>, Black <dbl>, Silver <dbl>, Blue <dbl>,
-      #   NONE <dbl>, age <int>, gender <chr>, region <chr>, income <dbl>
+      #   NONE <dbl>, age <int>, gender <chr>, region <chr>, income <dbl>,
+      #   education <int+lbl>
 
 # conjoint_df validates the absence column
 
