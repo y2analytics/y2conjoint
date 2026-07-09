@@ -1,6 +1,13 @@
 #' @importFrom dplyr dplyr_reconstruct dplyr_col_modify
 #' @importFrom rlang %||%
+#' @importFrom haven as_factor
 NULL
+
+# The haven importFrom above is deliberate: it forces haven's namespace (and its
+# `.onLoad` vctrs S3 registration for `haven_labelled`) to load with the package.
+# Without it, the column-type abbreviation printed for labelled columns is
+# nondeterministic across test order and load state (`int+lbl` vs. the
+# `hvn_lbll` fallback), which breaks print snapshots on CI.
 
 # These dplyr verbs are thin pass-throughs. They exist only to record which verb
 # the user called (a "sentinel" in the method's frame) so that abort_protected()
