@@ -60,8 +60,12 @@
       print(sample_conjoint())
     Output
       <conjoint_df>: 5 collections
-      Collections: Brand, Price*, Battery*, Storage*, and Color
-      (* = ordered), NONE = NONE, 6 extra columns
+        * Brand
+        * Price (ordered)
+        * Battery (ordered)
+        * Storage (ordered)
+        * Color
+      NONE = NONE, 6 extra columns
       # A tibble: 200 x 22
          respondent_id Northwind Cascade Meridian `$199` `$299` `$399` `10 hours`
                  <int>     <dbl>   <dbl>    <dbl>  <dbl>  <dbl>  <dbl>      <dbl>

@@ -139,18 +139,27 @@ group_levels <- function(x, levels, call = rlang::caller_env()) {
   selections
 }
 
-S7::method(print, spec) <- function(x, ...) {
+# Render a spec to a character vector of cli-formatted lines. Kept separate from
+# the print method so competitive_set can reuse it *with* styling intact -
+# cli_fmt() preserves colour and weight, unlike capturing printed output.
+#' @keywords internal
+format_spec <- function(x) {
   label <- if (length(x@name) == 1) x@name else "(unnamed)"
-  cat(
-    cli::cli_fmt({
-      cli::cli_text("{.cls spec} {.strong {label}}")
-      for (nm in names(x@selections)) {
-        chosen <- x@selections[[nm]]
-        value <- if (length(chosen) == 0) "\u2014" else chosen
-        cli::cli_li("{.field {nm}}: {value}")
+  cli::cli_fmt({
+    cli::cli_text("{.cls spec} {fmt_object_name(label)}")
+    for (nm in names(x@selections)) {
+      chosen <- x@selections[[nm]]
+      value <- if (length(chosen) == 0) {
+        fmt_annotation("\u2014")
+      } else {
+        cli::ansi_collapse(fmt_level(chosen))
       }
-    }),
-    sep = "\n"
-  )
+      cli::cli_li("{fmt_collection(nm)}: {value}")
+    }
+  })
+}
+
+S7::method(print, spec) <- function(x, ...) {
+  cat(format_spec(x), sep = "\n")
   invisible(x)
 }

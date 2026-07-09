@@ -128,17 +128,20 @@ collection_absence <- function(x) {
 }
 
 S7::method(print, collection) <- function(x, ...) {
-  ordered <- if (is_ordered(x)) " (ordered)" else ""
+  ordered <- if (is_ordered(x)) fmt_annotation(" (ordered)") else ""
   levels <- if (is_ordered(x)) x@order else x@levels
-  # Mark the absence level so it is distinguishable at a glance.
-  labels <- levels
-  labels[levels %in% x@absence] <- paste0(
-    labels[levels %in% x@absence],
-    " (absence)"
+  # Colour the level names; mark the absence level with a dim annotation so it
+  # cannot be mistaken for part of the (possibly parenthesised) level name.
+  labels <- fmt_level(levels)
+  is_absence <- levels %in% x@absence
+  labels[is_absence] <- paste0(
+    labels[is_absence],
+    " ",
+    fmt_annotation("(absence)")
   )
   cat(
     cli::cli_fmt({
-      cli::cli_text("{.cls collection} {.strong {x@name}}{ordered}")
+      cli::cli_text("{.cls collection} {fmt_collection(x@name)}{ordered}")
       cli::cli_ul(labels)
     }),
     sep = "\n"
