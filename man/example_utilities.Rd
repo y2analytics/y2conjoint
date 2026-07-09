@@ -5,7 +5,7 @@
 \alias{example_utilities}
 \title{Example conjoint utilities}
 \format{
-A tibble with 200 rows and 21 columns:
+A tibble with 200 rows and 22 columns:
 \describe{
 \item{respondent_id}{Respondent identifier.}
 \item{A1B1, A1B2, A1B3}{Utilities for the three Brand levels.}
@@ -18,15 +18,19 @@ A tibble with 200 rows and 21 columns:
 \item{gender}{Respondent gender.}
 \item{region}{U.S. census region.}
 \item{income}{Respondent annual income in dollars.}
+\item{education}{Highest education completed, a \code{haven_labelled} variable of
+integer codes carrying value labels (as from an SPSS export).}
 }
 }
 \usage{
 example_utilities
 }
 \description{
-A small, simulated set of individual-level part-worth utilities in the model
-format (\verb{A[NUM]B[NUM]}), used throughout the examples and the getting-started
-article. Pass it together with \link{example_crosswalk} to \code{\link[=conjoint_df]{conjoint_df()}}.
+A small, simulated set of individual-level part-worth utilities from a
+cell-phone conjoint study, in the model format (\verb{A[NUM]B[NUM]}), used
+throughout the examples and the getting-started article. The five attributes
+are Brand, Price, Battery, Storage, and Color. Pass it together with
+\link{example_crosswalk} to \code{\link[=conjoint_df]{conjoint_df()}}.
 }
 \seealso{
 \link{example_crosswalk}

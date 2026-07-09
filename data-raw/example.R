@@ -4,6 +4,7 @@
 # Run with: source("data-raw/example.R")
 
 library(tibble)
+library(haven)
 
 set.seed(4127)
 
@@ -41,7 +42,19 @@ example_utilities <- tibble(
     n,
     replace = TRUE
   ),
-  income = round(rnorm(n, 65000, 20000) / 1000) * 1000
+  income = round(rnorm(n, 65000, 20000) / 1000) * 1000,
+  # A haven-labelled variable, as it would arrive from an SPSS export: integer
+  # codes carrying value labels.
+  education = labelled(
+    sample(1:4, n, replace = TRUE, prob = c(0.25, 0.35, 0.28, 0.12)),
+    labels = c(
+      "High school" = 1,
+      "Some college" = 2,
+      "Bachelor's degree" = 3,
+      "Graduate degree" = 4
+    ),
+    label = "Highest education completed"
+  )
 )
 
 example_crosswalk <- tibble(

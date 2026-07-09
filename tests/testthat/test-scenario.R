@@ -80,3 +80,76 @@ test_that("run_scenario matches a hand-computed softmax", {
   share_a <- round(mean(exp_a / (exp_a + exp_none)), 3)
   expect_equal(run_scenario(cjt, cs)$share_A, share_a)
 })
+
+test_that("run_scenario .by adds group_var, group_level, and n columns", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  out <- run_scenario(cjt, cs, .by = region)
+
+  expect_named(out, c("group_var", "group_level", "n", "share_A"))
+  expect_true(all(out$group_var == "region"))
+  expect_setequal(out$group_level, as.character(unique(cjt$region)))
+  # Subgroup sizes partition the sample.
+  expect_equal(sum(out$n), nrow(cjt))
+})
+
+test_that("run_scenario .by stacks several grouping variables marginally", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  out <- run_scenario(cjt, cs, .by = c(region, gender))
+
+  expect_setequal(unique(out$group_var), c("region", "gender"))
+  # Each variable's subgroups independently partition the sample.
+  totals <- dplyr::summarise(out, total = sum(n), .by = group_var)
+  expect_true(all(totals$total == nrow(cjt)))
+})
+
+test_that("run_scenario subgroup shares match a manual subset", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  out <- run_scenario(cjt, cs, .by = region)
+
+  first <- sort(unique(cjt$region))[1]
+  manual <- run_scenario(dplyr::filter(cjt, region == first), cs)
+  expect_equal(
+    out$share_A[out$group_level == first],
+    manual$share_A
+  )
+})
+
+test_that("run_scenario .by places missing values in their own subgroup", {
+  cjt <- sample_conjoint()
+  cjt <- dplyr::mutate(
+    cjt,
+    seg = rep(c("A", "B", NA), length.out = dplyr::n())
+  )
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  out <- run_scenario(cjt, cs, .by = seg)
+
+  expect_true(anyNA(out$group_level))
+  na_row <- out[is.na(out$group_level), ]
+  expect_equal(na_row$n, sum(is.na(cjt$seg)))
+  # A missing value does not silently vanish: subgroup sizes still add up.
+  expect_equal(sum(out$n), nrow(cjt))
+})
+
+test_that("run_scenario .by uses value labels for haven_labelled columns", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  out <- run_scenario(cjt, cs, .by = education)
+
+  labels <- names(attr(cjt$education, "labels"))
+  # Rows are labelled in human terms, in the label (code) order, not bare codes.
+  expect_equal(out$group_level, labels)
+  expect_equal(sum(out$n), nrow(cjt))
+})

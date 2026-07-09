@@ -1,10 +1,12 @@
 #' Example conjoint utilities
 #'
-#' A small, simulated set of individual-level part-worth utilities in the model
-#' format (`A[NUM]B[NUM]`), used throughout the examples and the getting-started
-#' article. Pass it together with [example_crosswalk] to [conjoint_df()].
+#' A small, simulated set of individual-level part-worth utilities from a
+#' cell-phone conjoint study, in the model format (`A[NUM]B[NUM]`), used
+#' throughout the examples and the getting-started article. The five attributes
+#' are Brand, Price, Battery, Storage, and Color. Pass it together with
+#' [example_crosswalk] to [conjoint_df()].
 #'
-#' @format A tibble with 200 rows and 21 columns:
+#' @format A tibble with 200 rows and 22 columns:
 #' \describe{
 #'   \item{respondent_id}{Respondent identifier.}
 #'   \item{A1B1, A1B2, A1B3}{Utilities for the three Brand levels.}
@@ -17,6 +19,8 @@
 #'   \item{gender}{Respondent gender.}
 #'   \item{region}{U.S. census region.}
 #'   \item{income}{Respondent annual income in dollars.}
+#'   \item{education}{Highest education completed, a `haven_labelled` variable of
+#'     integer codes carrying value labels (as from an SPSS export).}
 #' }
 #' @seealso [example_crosswalk]
 "example_utilities"

@@ -4,7 +4,13 @@
 \alias{run_scenario}
 \title{Estimate preference shares for a competitive set}
 \usage{
-run_scenario(x, competitive_set, combine_fn = pmax, scaling_factor = 1)
+run_scenario(
+  x,
+  competitive_set,
+  combine_fn = pmax,
+  scaling_factor = 1,
+  .by = NULL
+)
 }
 \arguments{
 \item{x}{A \link{conjoint_df} of individual-level utilities.}
@@ -19,10 +25,19 @@ collection absent from the list falls back to \code{\link[=pmax]{pmax()}}.}
 \item{scaling_factor}{A numeric multiplier applied to all utilities before the
 softmax. Values above 1 sharpen the choice probabilities toward the highest
 utility; values below 1 flatten them. Defaults to \code{1}.}
+
+\item{.by}{Optional <\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> columns to
+compute shares within. Each selected column is treated \emph{marginally}: the
+sample is split by that column's values and shares are computed within each
+value, then the results for every selected column are stacked. Defaults to
+\code{NULL} (whole sample).}
 }
 \value{
-A one-row tibble with one \verb{share_*} column per product in the
-competitive set.
+When \code{.by} is \code{NULL}, a one-row tibble with one \verb{share_*} column per
+product in the competitive set. When \code{.by} is supplied, a tibble with one
+row per grouping variable and value, carrying \code{group_var} (the grouping
+column), \code{group_level} (its value, as a string), \code{n} (respondents in the
+subgroup), and the \verb{share_*} columns.
 }
 \description{
 Applies a logit (softmax) choice model: each respondent's utility for every
@@ -41,4 +56,7 @@ run_scenario(cjt, market)
 
 # Sharpen the shares toward the most attractive product.
 run_scenario(cjt, market, scaling_factor = 2)
+
+# Shares within each region, then within each gender, stacked.
+run_scenario(cjt, market, .by = c(region, gender))
 }
