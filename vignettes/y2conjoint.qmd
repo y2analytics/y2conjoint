@@ -14,12 +14,19 @@ knitr:
 #| label: setup
 #| include: false
 library(y2conjoint)
+library(dplyr)
+library(ggplot2)
 ```
 
 `y2conjoint` provides data structures and functions for working with the output
-of a choice-based conjoint study. This article walks through a full example:
-loading raw utilities, describing their structure, defining products, and
-estimating preference shares for a competitive set.
+of a choice-based conjoint study. This article walks through a full example
+using a simulated **cell-phone** study: loading raw utilities, describing the
+attributes, defining products, estimating preference shares (overall and by
+subgroup), and stress-testing a design with a sensitivity analysis.
+
+The phones in this study vary on five attributes — **Brand**, **Price**,
+**Battery** life, **Storage**, and **Color** — and the goal is to understand how
+those attributes drive choice.
 
 ## The raw data
 
@@ -42,13 +49,13 @@ ordered attributes like price — its rank.
 example_crosswalk
 ```
 
-Here `Brand` is unordered (`collection_order` is `NA`), while `Price` and
-`Battery` are ordered.
+Here `Brand` and `Color` are unordered (`collection_order` is `NA`), while
+`Price`, `Battery`, and `Storage` are ordered.
 
 ## Building a conjoint_df
 
 `conjoint_df()` renames the model-format columns to their user-facing names and
-records the collection structure as metadata. Extra columns (IDs, demographics)
+records the attribute structure as metadata. Extra columns (IDs, demographics)
 are carried along untouched.
 
 ```{r}
@@ -60,26 +67,26 @@ cjt
 The print header summarizes the collections (a trailing `*` marks an ordered
 one), the outside-good column, and how many extra columns are present.
 
-### Collections
+### Protected columns
 
-Each collection groups the level columns of one attribute:
+The level columns and the `NONE` outside good are **protected**: they hold the
+utilities the whole analysis depends on, so `conjoint_df` guards them against
+accidental loss.
 
 ```{r}
-#| label: collections
-cjt |>
-  protected_cols()
+#| label: protected
+protected_cols(cjt)
 ```
 
-The level columns and the `NONE` outside good are **protected**. You can wrangle
-demographics freely, but the utility columns cannot be dropped, renamed, or
-overwritten by accident.
+You can wrangle demographics freely, but a protected column cannot be dropped,
+renamed, or overwritten by accident.
 
 ```{r}
 #| label: filter-ok
 # Filtering rows and editing demographics is fine.
 cjt |>
-  dplyr::filter(age >= 40) |>
-  dplyr::mutate(age_decade = age %/% 10 * 10)
+  filter(age >= 40) |>
+  mutate(age_decade = age %/% 10 * 10)
 ```
 
 ```{r}
@@ -87,11 +94,54 @@ cjt |>
 #| error: true
 # Overwriting a protected column is blocked.
 cjt |>
-  dplyr::mutate(Northwind = 0)
+  mutate(Northwind = 0)
 ```
 
 If you genuinely need to reshape the utilities, call `tibble::as_tibble()` first
 to drop the guardrails.
+
+## Attributes are collections
+
+`conjoint_df()` builds a [collection] for each attribute from the crosswalk, but
+it is worth understanding them directly, because specs (below) are validated
+against them. A plain `collection()` describes an unordered attribute, while
+`ordered_collection()` records a meaningful order — exactly the distinction
+between a phone's brand and its price:
+
+```{r}
+#| label: collections
+brand <- collection("Brand", c("Northwind", "Cascade", "Meridian"))
+price <- ordered_collection("Price", c("$199", "$299", "$399"))
+
+brand
+price
+
+is_ordered(brand)
+is_ordered(price)
+```
+
+`is_ordered()` tells the two apart — useful when deciding whether it makes sense
+to talk about "moving up a level" for an attribute.
+
+### Absence levels
+
+Some attributes include a level that means *having none of the feature*. If this
+study had also tested a camera, "No camera" would be that level. Flag it with
+`absence` so the rest of the package knows it is special:
+
+```{r}
+#| label: absence
+camera <- collection(
+  "Camera",
+  c("No camera", "12 MP", "48 MP"),
+  absence = "No camera"
+)
+camera
+```
+
+An absence level is mutually exclusive with other levels of the same attribute — a
+phone cannot simultaneously have "No camera" and a 48 MP camera — and the package
+enforces that when you build a product (next section).
 
 ## Describing products with specs
 
@@ -100,31 +150,68 @@ a single level per collection is the common case:
 
 ```{r}
 #| label: spec
-flagship <- spec(cjt, c("Meridian", "$399", "20 hours"), name = "Flagship")
+flagship <- spec(
+  cjt,
+  c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+  name = "Flagship"
+)
 flagship
 ```
 
-You may select *several* levels within one collection — useful for co-branded
-products, where the combine function (below) decides how to merge them.
+You may select *several* levels within one collection — useful for a co-branded
+phone, where the combine function (below) decides how to merge them:
 
 ```{r}
 #| label: spec-cobrand
-co_brand <- spec(cjt, c("Northwind", "Cascade", "$199", "10 hours"), name = "Co-brand")
+co_brand <- spec(
+  cjt,
+  c("Northwind", "Cascade", "Meridian", "$199", "10 hours", "128 GB", "Blue"),
+  name = "Co-brand"
+)
+
+co_brand
 ```
+
+Absence levels are the exception: because they mean "none of this feature", they
+cannot be paired with another level from the same attribute. A spec that tries
+to is rejected:
+
+```{r}
+#| label: spec-absence
+#| error: true
+spec(
+  list(brand, price, camera),
+  c("Northwind", "$199", "No camera", "48 MP")
+)
+```
+
+## From spec to utility
+
+`compute_product_utility()` is the building block underneath everything else: it
+collapses a spec into a single utility per respondent by combining the selected
+levels within each attribute and summing across attributes.
+
+```{r}
+#| label: utility
+head(compute_product_utility(cjt, flagship))
+```
+
+On its own this vector answers "how appealing is this phone to each respondent?".
+Preference share (next) turns those numbers into a market forecast.
 
 ## Competitive sets and preference shares
 
-A `competitive_set` bundles the products that compete for choice. `run_scenario()`
+A `competitive_set` bundles the phones that compete for choice. `run_scenario()`
 applies a logit (softmax) choice model: it turns each respondent's product
-utilities into choice probabilities, lets the `NONE` outside good compete, and
+utilities into choice probabilities, takes into account the NONE preference, and
 averages the probabilities into mean preference shares.
 
 ```{r}
 #| label: scenario
 market <- competitive_set(
-  spec(cjt, c("Northwind", "$199", "20 hours"), name = "Value"),
-  spec(cjt, c("Cascade", "$299", "20 hours"), name = "Mainstream"),
-  spec(cjt, c("Meridian", "$399", "20 hours"), name = "Premium"),
+  spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+  spec(cjt, c("Cascade", "$299", "20 hours", "256 GB", "Silver"), name = "Mainstream"),
+  spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Launch"
 )
 
@@ -132,51 +219,120 @@ shares <- run_scenario(cjt, market)
 shares
 ```
 
-Each column is one product's mean preference share. The shares plus the `NONE`
-outside good's share sum to 1, so the remainder of the market goes to the
-outside good.
+Each column is one phone's mean preference share. The shares plus the `NONE`
+outside good's share sum to 1, so the remainder of the market goes to buyers who
+would choose none of these phones.
 
 ```{r}
 #| label: plot
 #| fig-alt: "Bar chart of preference share by product."
 #| fig-width: 6
 #| fig-height: 3
-library(ggplot2)
-
 shares |>
   tidyr::pivot_longer(everything(), names_to = "product", values_to = "share") |>
-  dplyr::mutate(product = sub("^share_", "", product)) |>
+  mutate(product = sub("^share_", "", product)) |>
   ggplot(aes(share, reorder(product, share))) +
   geom_col() +
   labs(x = "Preference share", y = NULL)
 ```
 
-## Combining levels within a collection
+### Combining levels within a collection
 
 When a product selects more than one level from a collection, `combine_fn`
 decides how to merge them. The default, `pmax()`, takes the best available level
 (a reasonable rule for co-branding: buyers respond to the more appealing brand).
-
-You can also pass a **named list** to use different rules per collection. Any
-collection you omit falls back to `pmax()`:
+Pass a **named list** to use different rules per collection; any collection you
+omit falls back to `pmax()`:
 
 ```{r}
 #| label: combine-fn
-run_scenario(
-  cjt,
-  market,
-  combine_fn = list(Brand = pmax, Price = pmax)
-)
+run_scenario(cjt, market, combine_fn = list(Brand = pmax))
 ```
 
-## Scaling choice probabilities
+### Scaling choice probabilities
 
 `scaling_factor` multiplies every utility before the softmax. Values above 1
-sharpen the shares toward the most attractive product; values below 1 flatten
-them toward an even split. It is a convenient handle for calibrating a simulator
-to known market conditions.
+sharpen the shares toward the most attractive phone; values below 1 flatten them
+toward an even split. It is a convenient handle for calibrating a simulator to
+known market conditions.
 
 ```{r}
 #| label: scaling
 run_scenario(cjt, market, scaling_factor = 2)
+```
+
+## Preference shares by subgroup
+
+Marketers rarely want a single number — they want to know *who* prefers *what*.
+The `.by` argument computes shares within subgroups. Each column you name is
+treated marginally: the sample is split by that column's values, scored within
+each, and the results are stacked, with the subgroup size `n` reported alongside.
+
+```{r}
+#| label: by-region
+run_scenario(cjt, market, .by = region)
+```
+
+The `n` column matters: a share computed from a handful of respondents is noisy,
+so always check the base before reading too much into a subgroup.
+
+```{r}
+#| label: by-education-plot
+#| fig-alt: "Preference share by product across education groups."
+#| fig-width: 7
+#| fig-height: 3
+run_scenario(cjt, market, .by = education) |>
+  tidyr::pivot_longer(
+    starts_with("share_"),
+    names_to = "product",
+    values_to = "share"
+  ) |>
+  mutate(
+    product = sub("^share_", "", product),
+    group_level = factor(group_level, levels = unique(group_level))
+  ) |>
+  ggplot(aes(share, group_level)) +
+  geom_col() +
+  facet_wrap(vars(product)) +
+  labs(x = "Preference share", y = NULL)
+```
+
+## Sensitivity analysis
+
+Once you have a candidate phone, the next question is usually "which change would
+move share the most?". `sensitivity_analysis()` perturbs a spec one level at a
+time and reports how each change shifts preference share against a baseline.
+
+For a single-select attribute it swaps the chosen level for each alternative
+(`alone`); for an attribute you mark as multiple-select it instead adds
+(`added_in`) or removes (`taken_out`) a level. Here we treat `Brand` as
+multiple-select — modelling co-branding — and everything else as single-select:
+
+```{r}
+#| label: sensitivity
+sens <- sensitivity_analysis(cjt, multiple_select = "Brand", spec = flagship)
+sens
+```
+
+A tornado chart makes the levers obvious: bars to the right raise share relative
+to the flagship baseline, bars to the left cost share.
+
+```{r}
+#| label: sensitivity-plot
+#| fig-alt: "Tornado chart of preference-share change for each perturbation."
+#| fig-width: 7
+#| fig-height: 4
+sens |>
+  mutate(change = paste0(Feature, ": ", Level, " (", comparison, ")")) |>
+  ggplot(aes(delta, reorder(change, delta))) +
+  geom_col() +
+  geom_vline(xintercept = 0, linewidth = 0.3) +
+  labs(
+    x = "Change in preference share vs. flagship baseline",
+    y = NULL
+  )
+```
+
+Read this as a to-do list for the design: the changes at the extremes are where
+price, battery, or storage decisions matter most for this phone's share.
 ```
