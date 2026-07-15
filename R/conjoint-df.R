@@ -41,12 +41,14 @@ conjoint_df <- function(data, crosswalk, none = "NONE") {
 
 #' @keywords internal
 new_conjoint_df <- function(data, collections, none) {
+  # conjoint_df is a subclass of collected_df: it adds the outside-good column
+  # and column protection on top of the collection metadata.
   tibble::new_tibble(
     data,
     collections = collections,
     none = none,
     nrow = nrow(data),
-    class = "conjoint_df"
+    class = c("conjoint_df", "collected_df")
   )
 }
 
@@ -255,12 +257,7 @@ collection_absence_from_rows <- function(rows) {
 }
 
 #' @keywords internal
-conjoint_collections <- function(x) {
-  attr(x, "collections")
-}
-
-#' @keywords internal
-conjoint_none <- function(x) {
+get_none <- function(x) {
   attr(x, "none")
 }
 
@@ -277,23 +274,20 @@ conjoint_none <- function(x) {
 #' @export
 protected_cols <- function(x) {
   levels <- purrr::list_c(purrr::map(
-    conjoint_collections(x),
+    get_collections(x),
     collection_levels
   ))
-  unique(c(levels, conjoint_none(x)))
+  unique(c(levels, get_none(x)))
 }
 
 # Registered as the print method for conjoint_df in .onLoad(). We register
 # manually (rather than via @export) because S7::methods_register() drops plain
 # S3 methods on the print generic once S7 owns other print methods.
 print_conjoint_df <- function(x, ...) {
-  collections <- conjoint_collections(x)
-  names <- purrr::map_chr(collections, \(cl) cl@name)
-  ordered <- purrr::map_lgl(collections, is_ordered)
+  collections <- get_collections(x)
   # One collection per line; mark ordered ones with a dim annotation rather than
   # an asterisk and legend.
-  labels <- fmt_collection(names)
-  labels[ordered] <- paste0(labels[ordered], fmt_annotation(" (ordered)"))
+  labels <- format_collections_list(collections)
   n_extra <- ncol(x) - length(protected_cols(x))
 
   cat(
@@ -303,7 +297,7 @@ print_conjoint_df <- function(x, ...) {
       )
       cli::cli_ul(labels)
       cli::cli_text(
-        "NONE = {.field {conjoint_none(x)}}, {n_extra} extra column{?s}"
+        "NONE = {.field {get_none(x)}}, {n_extra} extra column{?s}"
       )
     }),
     sep = "\n"
@@ -314,6 +308,6 @@ print_conjoint_df <- function(x, ...) {
 
 #' @keywords internal
 unclass_conjoint <- function(x) {
-  class(x) <- setdiff(class(x), "conjoint_df")
+  class(x) <- setdiff(class(x), c("conjoint_df", "collected_df"))
   x
 }

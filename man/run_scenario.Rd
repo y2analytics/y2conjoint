@@ -15,7 +15,11 @@ run_scenario(
 \arguments{
 \item{x}{A \link{conjoint_df} of individual-level utilities.}
 
-\item{competitive_set}{A \link{competitive_set}.}
+\item{competitive_set}{A \link{competitive_set}, or a list of them. When a list is
+supplied, the scenario is run on each set individually and the results are
+column-bound together. Any \verb{share_*} column name shared by more than one set
+is disambiguated by appending \verb{_i}, where \code{i} is the 1-based position of the
+set it came from (unique names are left untouched).}
 
 \item{combine_fn}{How to combine multiple selected levels within a collection.
 Either a single function applied to every collection (the default,
@@ -33,11 +37,13 @@ value, then the results for every selected column are stacked. Defaults to
 \code{NULL} (whole sample).}
 }
 \value{
-When \code{.by} is \code{NULL}, a one-row tibble with one \verb{share_*} column per
-product in the competitive set. When \code{.by} is supplied, a tibble with one
-row per grouping variable and value, carrying \code{group_var} (the grouping
-column), \code{group_level} (its value, as a string), \code{n} (respondents in the
-subgroup), and the \verb{share_*} columns.
+A \link{collected_df}: the \verb{share_*} columns produced by the
+competitive set(s), with one \link{collection} per set grouping that set's
+columns (named after the set, or \code{set_i} when unnamed). When \code{.by} is
+\code{NULL} it has one row; when \code{.by} is supplied it carries \code{group_var} (the
+grouping column), \code{group_level} (its value, as a string), and \code{n}
+(respondents in the subgroup) alongside the \verb{share_*} columns, one row per
+grouping variable and value.
 }
 \description{
 Applies a logit (softmax) choice model: each respondent's utility for every
@@ -59,4 +65,11 @@ run_scenario(cjt, market, scaling_factor = 2)
 
 # Shares within each region, then within each gender, stacked.
 run_scenario(cjt, market, .by = c(region, gender))
+
+# Compare two competitive sets side by side.
+refresh <- competitive_set(
+  spec(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
+  name = "Refresh"
+)
+run_scenario(cjt, list(market, refresh))
 }

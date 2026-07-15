@@ -62,7 +62,7 @@ validate_spec_fields <- function(name, selections) {
 #' @keywords internal
 as_collections <- function(x, call = rlang::caller_env()) {
   if (inherits(x, "conjoint_df")) {
-    return(conjoint_collections(x))
+    return(get_collections(x))
   }
   is_collection <- function(e) S7::S7_inherits(e, collection)
   if (is.list(x) && length(x) > 0 && all(purrr::map_lgl(x, is_collection))) {
