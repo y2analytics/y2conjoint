@@ -11,7 +11,7 @@ test_that("conjoint_df keeps extra columns", {
 
 test_that("conjoint_df builds ordered and unordered collections", {
   cjt <- sample_conjoint()
-  collections <- conjoint_collections(cjt)
+  collections <- get_collections(cjt)
   names(collections) <- vapply(collections, function(cl) cl@name, character(1))
   expect_false(is_ordered(collections$Brand))
   expect_true(is_ordered(collections$Price))
@@ -92,13 +92,13 @@ test_that("conjoint_df reads an optional absence column from the crosswalk", {
   cw$absence <- cw$user_name == "128 GB"
   cjt <- conjoint_df(sample_data(), cw)
 
-  storage <- Filter(\(cl) cl@name == "Storage", conjoint_collections(cjt))[[1]]
+  storage <- Filter(\(cl) cl@name == "Storage", get_collections(cjt))[[1]]
   expect_equal(collection_absence(storage), "128 GB")
 })
 
 test_that("conjoint_df defaults to no absence levels when the column is absent", {
   cjt <- sample_conjoint()
-  absences <- purrr::map(conjoint_collections(cjt), collection_absence)
+  absences <- purrr::map(get_collections(cjt), collection_absence)
   expect_true(all(lengths(absences) == 0))
 })
 

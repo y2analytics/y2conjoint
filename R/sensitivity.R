@@ -50,7 +50,7 @@ sensitivity_analysis <- function(
   combine_fn = pmax,
   scaling_factor = 1
 ) {
-  collections <- conjoint_collections(x)
+  collections <- get_collections(x)
   collection_names <- purrr::map_chr(collections, \(cl) cl@name)
   check_multiple_select(multiple_select, collection_names)
 

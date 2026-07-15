@@ -59,7 +59,11 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #' The NONE outside good competes for share as a "choose nothing" option.
 #'
 #' @param x A [conjoint_df] of individual-level utilities.
-#' @param competitive_set A [competitive_set].
+#' @param competitive_set A [competitive_set], or a list of them. When a list is
+#'   supplied, the scenario is run on each set individually and the results are
+#'   column-bound together. Any `share_*` column name shared by more than one set
+#'   is disambiguated by appending `_i`, where `i` is the 1-based position of the
+#'   set it came from (unique names are left untouched).
 #' @param combine_fn How to combine multiple selected levels within a collection.
 #'   Either a single function applied to every collection (the default,
 #'   [pmax()]), or a named list mapping collection names to functions. Any
@@ -73,11 +77,13 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #'   value, then the results for every selected column are stacked. Defaults to
 #'   `NULL` (whole sample).
 #'
-#' @return When `.by` is `NULL`, a one-row tibble with one `share_*` column per
-#'   product in the competitive set. When `.by` is supplied, a tibble with one
-#'   row per grouping variable and value, carrying `group_var` (the grouping
-#'   column), `group_level` (its value, as a string), `n` (respondents in the
-#'   subgroup), and the `share_*` columns.
+#' @return A [collected_df]: the `share_*` columns produced by the
+#'   competitive set(s), with one [collection] per set grouping that set's
+#'   columns (named after the set, or `set_i` when unnamed). When `.by` is
+#'   `NULL` it has one row; when `.by` is supplied it carries `group_var` (the
+#'   grouping column), `group_level` (its value, as a string), and `n`
+#'   (respondents in the subgroup) alongside the `share_*` columns, one row per
+#'   grouping variable and value.
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
 #' market <- competitive_set(
@@ -92,6 +98,13 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #'
 #' # Shares within each region, then within each gender, stacked.
 #' run_scenario(cjt, market, .by = c(region, gender))
+#'
+#' # Compare two competitive sets side by side.
+#' refresh <- competitive_set(
+#'   spec(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
+#'   name = "Refresh"
+#' )
+#' run_scenario(cjt, list(market, refresh))
 #' @export
 run_scenario <- function(
   x,
@@ -100,12 +113,47 @@ run_scenario <- function(
   scaling_factor = 1,
   .by = NULL
 ) {
-  specs <- competitive_set@specs
-  check_specs_columns(x, specs)
+  sets <- normalize_competitive_sets(competitive_set)
+  purrr::walk(sets, function(set) {
+    check_specs_columns(x, set@specs)
+  })
   check_combine_fn(combine_fn, x)
   # From here the inputs are validated, so the rest is pure computation.
 
   by_vars <- names(tidyselect::eval_select(rlang::enquo(.by), x))
+
+  # Score each set on its own, then stitch the per-set results together.
+  per_set <- purrr::map(sets, function(set) {
+    run_one_scenario(x, set@specs, combine_fn, scaling_factor, by_vars)
+  })
+  combine_scenarios(per_set, sets)
+}
+
+# Accept either a single competitive_set or a list of them, and validate that a
+# list holds only competitive_set objects.
+#' @keywords internal
+normalize_competitive_sets <- function(x, call = rlang::caller_env()) {
+  if (is_competitive_set(x)) {
+    return(list(x))
+  }
+  if (
+    !is.list(x) || length(x) == 0 || !all(purrr::map_lgl(x, is_competitive_set))
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg competitive_set} must be a {.cls competitive_set} or a non-empty list of them.",
+        "i" = "You supplied {.obj_type_friendly {x}}."
+      ),
+      call = call
+    )
+  }
+  x
+}
+
+# Score one competitive set. Without grouping this is a one-row tibble of shares;
+# with grouping it carries group_var/group_level/n columns per subgroup.
+#' @keywords internal
+run_one_scenario <- function(x, specs, combine_fn, scaling_factor, by_vars) {
   if (length(by_vars) == 0) {
     return(scenario_shares(x, specs, combine_fn, scaling_factor))
   }
@@ -140,6 +188,54 @@ run_scenario <- function(
   dplyr::bind_rows(purrr::list_flatten(rows))
 }
 
+# Column-bind the per-set results into one collected_df: keep any grouping
+# columns once (they are identical across sets, which are scored on the same
+# sample), disambiguate share names shared by more than one set with a `_i`
+# suffix, and record one collection per set.
+#' @keywords internal
+combine_scenarios <- function(per_set, sets) {
+  is_share <- \(nms) startsWith(nms, "share_")
+  share_by_set <- purrr::map(per_set, \(tbl) names(tbl)[is_share(names(tbl))])
+
+  # A share name appearing in more than one set is renamed in every set it
+  # appears in; unique names are left untouched.
+  all_share <- purrr::list_c(share_by_set)
+  colliding <- unique(all_share[duplicated(all_share)])
+
+  renamed <- purrr::imap(per_set, function(tbl, i) {
+    shares <- share_by_set[[i]]
+    new_shares <- dplyr::if_else(
+      shares %in% colliding,
+      paste0(shares, "_", i),
+      shares
+    )
+    names(tbl)[match(shares, names(tbl))] <- new_shares
+    tbl
+  })
+
+  # Grouping columns (group_var/group_level/n) are identical across sets, so keep
+  # the first set's copy and bind only the share columns from the rest.
+  first <- renamed[[1]]
+  if (length(renamed) > 1) {
+    others <- purrr::map(renamed[-1], \(tbl) tbl[is_share(names(tbl))])
+    combined <- dplyr::bind_cols(first, !!!others)
+  } else {
+    combined <- first
+  }
+
+  collections <- purrr::imap(renamed, function(tbl, i) {
+    set <- sets[[i]]
+    name <- if (length(set@name) == 1 && nzchar(set@name)) {
+      set@name
+    } else {
+      paste0("set_", i)
+    }
+    collection(name = name, levels = names(tbl)[is_share(names(tbl))])
+  })
+
+  new_collected_df(combined, collections)
+}
+
 # The distinct values of a grouping column, in the order subgroups should be
 # reported. Factors (including converted labelled columns) keep their level
 # order and drop unused levels; other types are sorted. A missing value, when
@@ -169,7 +265,7 @@ scenario_shares <- function(x, specs, combine_fn, scaling_factor) {
 
   # Add NONE as one more column so the "choose nothing" option competes with
   # the products for share.
-  product_utilities[["none"]] <- x[[conjoint_none(x)]] * scaling_factor
+  product_utilities[["none"]] <- x[[get_none(x)]] * scaling_factor
 
   # Convert utilities to per-respondent choice probabilities, then average
   # across respondents to get each option's mean share.
@@ -268,7 +364,7 @@ check_combine_fn <- function(combine_fn, x, call = rlang::caller_env()) {
       call = call
     )
   }
-  known <- purrr::map_chr(conjoint_collections(x), \(collection) {
+  known <- purrr::map_chr(get_collections(x), \(collection) {
     collection@name
   })
   unknown <- setdiff(names(combine_fn), known)

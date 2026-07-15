@@ -64,8 +64,8 @@ cjt <- conjoint_df(example_utilities, example_crosswalk)
 cjt
 ```
 
-The print header summarizes the collections (a trailing `*` marks an ordered
-one), the outside-good column, and how many extra columns are present.
+The print header summarizes the collections (ordered ones are annotated
+`(ordered)`), the outside-good column, and how many extra columns are present.
 
 ### Protected columns
 
@@ -225,6 +225,12 @@ Each column is one phone's mean preference share. The shares plus the `NONE`
 outside good's share sum to 1, so the remainder of the market goes to buyers who
 would choose none of these phones.
 
+The result is a `collected_df` — a tibble that carries **collections** of columns
+that belong together. Here the three `share_` columns form a single collection
+named after the set (`Launch`), which the print header reports. That grouping
+becomes useful when a run bundles several competitive sets, as we will see
+[below](#comparing-several-competitive-sets).
+
 ```{r}
 #| label: plot
 #| fig-alt: "Bar chart of preference share by product."
@@ -242,13 +248,24 @@ shares |>
 
 When a product selects more than one level from a collection, `combine_fn`
 decides how to merge them. The default, `pmax()`, takes the best available level
-(a reasonable rule for co-branding: buyers respond to the more appealing brand).
-Pass a **named list** to use different rules per collection; any collection you
-omit falls back to `pmax()`:
+— a reasonable rule for co-branding, where buyers respond to the more appealing
+brand. To instead model the two brands *reinforcing* one another, pass a **named
+list** that sums the `Brand` utilities; any collection you omit falls back to
+`pmax()`:
 
 ```{r}
 #| label: combine-fn
-run_scenario(cjt, market, combine_fn = list(Brand = pmax))
+co_market <- competitive_set(
+  spec(
+    cjt,
+    c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black"),
+    name = "Co-brand"
+  ),
+  spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  name = "Co-brand launch"
+)
+
+run_scenario(cjt, co_market, combine_fn = list(Brand = `+`))
 ```
 
 ### Scaling choice probabilities
@@ -297,6 +314,63 @@ run_scenario(cjt, market, .by = education) |>
   geom_col() +
   facet_wrap(vars(product)) +
   labs(x = "Preference share", y = NULL)
+```
+
+## Comparing several competitive sets {#comparing-several-competitive-sets}
+
+`run_scenario()` also accepts a **list** of competitive sets. It scores each one
+independently and binds the results together — the quickest way to compare whole
+lineups side by side. Here we pit the launch lineup against a possible refresh:
+
+```{r}
+#| label: multi-set
+refresh <- competitive_set(
+  spec(cjt, c("Cascade", "$199", "30 hours", "512 GB", "Blue"), name = "Value"),
+  spec(cjt, c("Meridian", "$299", "30 hours", "512 GB", "Black"), name = "Premium"),
+  name = "Refresh"
+)
+
+comparison <- run_scenario(cjt, list(market, refresh))
+comparison
+```
+
+The `collected_df` now carries one collection per set (`Launch` and `Refresh`),
+which the print header lists. Both lineups sell a "Value" and a "Premium" phone,
+so those share columns would collide; `run_scenario()` disambiguates them with a
+`_i` suffix naming the set they came from (`_1` = the launch set, `_2` = the
+refresh). "Mainstream" is unique to the launch lineup, so its column keeps its
+plain name.
+
+```{r}
+#| label: multi-set-plot
+#| fig-alt: "Bar chart of preference share for every product across both lineups."
+#| fig-width: 6
+#| fig-height: 3
+comparison |>
+  tidyr::pivot_longer(everything(), names_to = "product", values_to = "share") |>
+  mutate(product = sub("^share_", "", product)) |>
+  ggplot(aes(share, reorder(product, share))) +
+  geom_col() +
+  labs(x = "Preference share", y = NULL)
+```
+
+You can also build a `collected_df` yourself with `collected_df()` by pairing a
+data frame with the `collection()`s that describe its columns — handy when
+assembling results from outside the standard scenario workflow. A single
+collection can be passed on its own, and several can be given as a vector or a
+list:
+
+```{r}
+#| label: collected-df
+scores <- tibble::tibble(share_A = 0.4, share_B = 0.35, share_C = 0.25)
+
+collected_df(
+  scores,
+  c(
+    collection("Incumbents", c("share_A", "share_B")),
+    collection("Challenger", "share_C")
+  )
+)
 ```
 
 ## Sensitivity analysis

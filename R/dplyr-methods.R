@@ -92,8 +92,8 @@ abort_protected <- function(
 reattach_conjoint <- function(data, template) {
   new_conjoint_df(
     data,
-    collections = conjoint_collections(template),
-    none = conjoint_none(template)
+    collections = get_collections(template),
+    none = get_none(template)
   )
 }
 

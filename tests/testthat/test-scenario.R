@@ -103,8 +103,14 @@ test_that("run_scenario .by stacks several grouping variables marginally", {
   out <- run_scenario(cjt, cs, .by = c(region, gender))
 
   expect_setequal(unique(out$group_var), c("region", "gender"))
-  # Each variable's subgroups independently partition the sample.
-  totals <- dplyr::summarise(out, total = sum(n), .by = group_var)
+  # Each variable's subgroups independently partition the sample. Summarise on a
+  # plain tibble so the aggregation does not incidentally warn about dropping the
+  # scenario's share collections.
+  totals <- dplyr::summarise(
+    tibble::as_tibble(out),
+    total = sum(n),
+    .by = group_var
+  )
   expect_true(all(totals$total == nrow(cjt)))
 })
 
@@ -152,4 +158,121 @@ test_that("run_scenario .by uses value labels for haven_labelled columns", {
   # Rows are labelled in human terms, in the label (code) order, not bare codes.
   expect_equal(out$group_level, labels)
   expect_equal(sum(out$n), nrow(cjt))
+})
+
+test_that("run_scenario returns a collected_df with one collection per set", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    name = "Launch"
+  )
+  out <- run_scenario(cjt, cs)
+
+  expect_s3_class(out, "collected_df")
+  collections <- get_collections(out)
+  expect_length(collections, 1)
+  expect_equal(collections[[1]]@name, "Launch")
+  expect_equal(collections[[1]]@levels, "share_A")
+})
+
+test_that("run_scenario accepts a list of competitive sets and binds columns", {
+  cjt <- sample_conjoint()
+  launch <- competitive_set(
+    spec(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    name = "Launch"
+  )
+  refresh <- competitive_set(
+    spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Blue"), name = "B"),
+    name = "Refresh"
+  )
+  out <- run_scenario(cjt, list(launch, refresh))
+
+  expect_s3_class(out, "collected_df")
+  expect_named(out, c("share_A", "share_B"))
+  # Each set is scored independently, so its column matches a solo run.
+  expect_equal(out$share_A, run_scenario(cjt, launch)$share_A)
+  expect_equal(out$share_B, run_scenario(cjt, refresh)$share_B)
+
+  collections <- get_collections(out)
+  expect_equal(
+    purrr::map_chr(collections, \(cl) cl@name),
+    c("Launch", "Refresh")
+  )
+})
+
+test_that("run_scenario disambiguates colliding share names with a set index", {
+  cjt <- sample_conjoint()
+  first <- competitive_set(
+    spec(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "Value"
+    ),
+    spec(
+      cjt,
+      c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+      name = "Premium"
+    ),
+    name = "Launch"
+  )
+  second <- competitive_set(
+    spec(
+      cjt,
+      c("Cascade", "$299", "30 hours", "512 GB", "Blue"),
+      name = "Value"
+    ),
+    name = "Refresh"
+  )
+  out <- run_scenario(cjt, list(first, second))
+
+  # Only the colliding "Value" columns get a _i suffix; "Premium" is untouched.
+  expect_named(out, c("share_Value_1", "share_Premium", "share_Value_2"))
+  collections <- get_collections(out)
+  expect_equal(collections[[1]]@levels, c("share_Value_1", "share_Premium"))
+  expect_equal(collections[[2]]@levels, "share_Value_2")
+})
+
+test_that("run_scenario names an unnamed set set_i", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  out <- run_scenario(cjt, list(cs))
+  expect_equal(get_collections(out)[[1]]@name, "set_1")
+})
+
+test_that("run_scenario keeps grouping columns once across multiple sets", {
+  cjt <- sample_conjoint()
+  launch <- competitive_set(
+    spec(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    name = "Launch"
+  )
+  refresh <- competitive_set(
+    spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Blue"), name = "B"),
+    name = "Refresh"
+  )
+  out <- run_scenario(cjt, list(launch, refresh), .by = region)
+
+  expect_named(out, c("group_var", "group_level", "n", "share_A", "share_B"))
+  expect_equal(sum(out$n), nrow(cjt))
+})
+
+test_that("run_scenario rejects a list holding a non-competitive_set", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+  )
+  expect_error(run_scenario(cjt, list(cs, "nope")), "competitive_set")
 })

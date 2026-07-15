@@ -30,6 +30,13 @@ competitive_set <- S7::new_class(
   }
 )
 
+# Defined at top level so `competitive_set` resolves to the S7 class (not a
+# shadowing argument, as happens inside run_scenario()).
+#' @keywords internal
+is_competitive_set <- function(x) {
+  S7::S7_inherits(x, competitive_set)
+}
+
 #' @keywords internal
 validate_competitive_set <- function(name, specs) {
   if (length(name) > 1) {
