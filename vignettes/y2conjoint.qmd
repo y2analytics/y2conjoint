@@ -354,25 +354,6 @@ comparison |>
   labs(x = "Preference share", y = NULL)
 ```
 
-You can also build a `collected_df` yourself with `collected_df()` by pairing a
-data frame with the `collection()`s that describe its columns — handy when
-assembling results from outside the standard scenario workflow. A single
-collection can be passed on its own, and several can be given as a vector or a
-list:
-
-```{r}
-#| label: collected-df
-scores <- tibble::tibble(share_A = 0.4, share_B = 0.35, share_C = 0.25)
-
-collected_df(
-  scores,
-  c(
-    collection("Incumbents", c("share_A", "share_B")),
-    collection("Challenger", "share_C")
-  )
-)
-```
-
 ## Sensitivity analysis
 
 Once you have a candidate phone, the next question is usually "which change would
