@@ -125,8 +125,7 @@ group_levels <- function(x, levels, call = rlang::caller_env()) {
   if (length(conflicts) > 0) {
     cli::cli_abort(
       c(
-        "x" = "{cli::qty(conflicts)}Absence level{?s} {.val {conflicts}} cannot be combined with other levels.",
-        "!" = "An absence level must be selected on its own within its collection."
+        "x" = "{cli::qty(conflicts)}Absence level{?s} {.val {conflicts}} cannot be combined with other levels within its collection."
       ),
       call = call
     )
