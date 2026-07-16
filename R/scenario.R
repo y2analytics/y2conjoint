@@ -56,14 +56,17 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' Applies a logit (softmax) choice model: each respondent's utility for every
 #' product is turned into a probability of choosing it, and those probabilities
 #' are averaged across respondents to give each product's mean preference share.
-#' The NONE outside good competes for share as a "choose nothing" option.
+#' The NONE outside good competes for share as a "choose nothing" option,
+#' unless a competitive set's `none` property is `FALSE`, in which case that
+#' set's products are forced to compete only against one another.
 #'
 #' @param x A [conjoint_df] of individual-level utilities.
 #' @param competitive_set A [competitive_set], or a list of them. When a list is
 #'   supplied, the scenario is run on each set individually and the results are
 #'   column-bound together. Any `share_*` column name shared by more than one set
 #'   is disambiguated by appending `_i`, where `i` is the 1-based position of the
-#'   set it came from (unique names are left untouched).
+#'   set it came from (unique names are left untouched). Each set's own `none`
+#'   property controls whether NONE competes for share within that set.
 #' @param combine_fn How to combine multiple selected levels within a collection.
 #'   Either a single function applied to every collection (the default,
 #'   [pmax()]), or a named list mapping collection names to functions. Any
@@ -99,6 +102,15 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' # Shares within each region, then within each gender, stacked.
 #' run_scenario(cjt, market, .by = c(region, gender))
 #'
+#' # Exclude NONE so the products are forced to compete only with each other.
+#' forced_choice <- competitive_set(
+#'   product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+#'   product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+#'   name = "Launch",
+#'   none = FALSE
+#' )
+#' run_scenario(cjt, forced_choice)
+#'
 #' # Compare two competitive sets side by side.
 #' refresh <- competitive_set(
 #'   product(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
@@ -122,9 +134,17 @@ run_scenario <- function(
 
   by_vars <- names(tidyselect::eval_select(rlang::enquo(.by), x))
 
-  # Score each set on its own, then stitch the per-set results together.
+  # Score each set on its own, then stitch the per-set results together. Each
+  # set's own `none` property decides whether NONE competes in that set.
   per_set <- purrr::map(sets, function(set) {
-    run_one_scenario(x, set@products, combine_fn, scaling_factor, by_vars)
+    run_one_scenario(
+      x,
+      set@products,
+      combine_fn,
+      scaling_factor,
+      by_vars,
+      set@none
+    )
   })
   combine_scenarios(per_set, sets)
 }
@@ -153,9 +173,16 @@ normalize_competitive_sets <- function(x, call = rlang::caller_env()) {
 # Score one competitive set. Without grouping this is a one-row tibble of shares;
 # with grouping it carries group_var/group_level/n columns per subgroup.
 #' @keywords internal
-run_one_scenario <- function(x, products, combine_fn, scaling_factor, by_vars) {
+run_one_scenario <- function(
+  x,
+  products,
+  combine_fn,
+  scaling_factor,
+  by_vars,
+  none
+) {
   if (length(by_vars) == 0) {
-    return(scenario_shares(x, products, combine_fn, scaling_factor))
+    return(scenario_shares(x, products, combine_fn, scaling_factor, none))
   }
 
   # Treat each grouping column marginally: split the sample by its values,
@@ -181,7 +208,7 @@ run_one_scenario <- function(x, products, combine_fn, scaling_factor, by_vars) {
           group_level = as.character(level),
           n = nrow(subgroup)
         ),
-        scenario_shares(subgroup, products, combine_fn, scaling_factor)
+        scenario_shares(subgroup, products, combine_fn, scaling_factor, none)
       )
     })
   })
@@ -252,10 +279,11 @@ subgroup_levels <- function(values) {
   sort(unique(values), na.last = TRUE)
 }
 
-# Score one (sub)sample: one utility column per product plus NONE, softmax to
-# per-respondent choice probabilities, then average to mean shares.
+# Score one (sub)sample: one utility column per product plus, when requested,
+# NONE, softmax to per-respondent choice probabilities, then average to mean
+# shares.
 #' @keywords internal
-scenario_shares <- function(x, products, combine_fn, scaling_factor) {
+scenario_shares <- function(x, products, combine_fn, scaling_factor, none) {
   # One utility column per product (rows = respondents).
   product_utilities <- purrr::map(
     products,
@@ -264,8 +292,10 @@ scenario_shares <- function(x, products, combine_fn, scaling_factor) {
   names(product_utilities) <- product_output_names(products)
 
   # Add NONE as one more column so the "choose nothing" option competes with
-  # the products for share.
-  product_utilities[["none"]] <- x[[get_none(x)]] * scaling_factor
+  # the products for share - unless the competitive set excludes it.
+  if (none) {
+    product_utilities[["none"]] <- x[[get_none(x)]] * scaling_factor
+  }
 
   # Convert utilities to per-respondent choice probabilities, then average
   # across respondents to get each option's mean share.

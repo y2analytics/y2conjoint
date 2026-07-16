@@ -34,6 +34,56 @@
         * Battery: 30 hours
         * Storage: 512 GB
         * Color: Silver
+      
+        NONE
+
+# competitive_set rejects a non-scalar or missing none
+
+    Code
+      competitive_set(p, none = c(TRUE, FALSE))
+    Condition
+      Error:
+      ! <y2conjoint::competitive_set> object is invalid:
+      - @none must be a single TRUE or FALSE
+
+---
+
+    Code
+      competitive_set(p, none = NA)
+    Condition
+      Error:
+      ! <y2conjoint::competitive_set> object is invalid:
+      - @none must be a single TRUE or FALSE
+
+# competitive_set printing reports whether NONE is included
+
+    Code
+      print(included)
+    Output
+      <competitive_set> (unnamed): 1 product: A
+      
+        <product> A
+        * Brand: Northwind
+        * Price: $199
+        * Battery: 20 hours
+        * Storage: 256 GB
+        * Color: Black
+      
+        NONE
+
+---
+
+    Code
+      print(excluded)
+    Output
+      <competitive_set> (unnamed): 1 product: A
+      
+        <product> A
+        * Brand: Northwind
+        * Price: $199
+        * Battery: 20 hours
+        * Storage: 256 GB
+        * Color: Black
 
 # competitive_set rejects products over different collections
 

@@ -309,6 +309,90 @@ test_that("run_scenario keeps grouping columns once across multiple sets", {
   expect_equal(sum(out$n), nrow(cjt))
 })
 
+test_that("run_scenario excludes NONE when the set's none property is FALSE", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    product(
+      cjt,
+      c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+      name = "B"
+    ),
+    none = FALSE
+  )
+  out <- run_scenario(cjt, cs)
+
+  # With NONE excluded, the two products are the only options and their
+  # shares must sum to 1 (up to rounding).
+  expect_equal(out$share_A + out$share_B, 1)
+})
+
+test_that("run_scenario matches a hand-computed softmax without NONE", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    product(
+      cjt,
+      c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+      name = "B"
+    ),
+    none = FALSE
+  )
+  util_a <- cjt$Northwind +
+    cjt[["$199"]] +
+    cjt[["20 hours"]] +
+    cjt[["256 GB"]] +
+    cjt[["Black"]]
+  util_b <- cjt$Meridian +
+    cjt[["$399"]] +
+    cjt[["30 hours"]] +
+    cjt[["512 GB"]] +
+    cjt[["Black"]]
+  row_max <- pmax(util_a, util_b)
+  exp_a <- exp(util_a - row_max)
+  exp_b <- exp(util_b - row_max)
+  share_a <- round(mean(exp_a / (exp_a + exp_b)), 3)
+  expect_equal(run_scenario(cjt, cs)$share_A, share_a)
+})
+
+test_that("run_scenario applies none independently across multiple sets", {
+  cjt <- sample_conjoint()
+  with_none <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    name = "Launch"
+  )
+  without_none <- competitive_set(
+    product(
+      cjt,
+      c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+      name = "B"
+    ),
+    name = "Refresh",
+    none = FALSE
+  )
+  out <- run_scenario(cjt, list(with_none, without_none))
+
+  # A lone product with NONE excluded takes 100% share.
+  expect_equal(out$share_B, 1)
+  # The other set is unaffected and still competes against NONE.
+  expect_equal(
+    out$share_A,
+    run_scenario(cjt, with_none)$share_A
+  )
+})
+
 test_that("run_scenario rejects a list holding a non-competitive_set", {
   cjt <- sample_conjoint()
   cs <- competitive_set(

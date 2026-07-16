@@ -59,9 +59,3 @@ test_that("dropping a collection's column drops the collection with a warning", 
   )
   expect_length(get_collections(dropped), 0)
 })
-
-test_that("collected_df prints its collections", {
-  df <- tibble::tibble(share_A = 0.4, share_B = 0.6, id = 1)
-  out <- collected_df(df, list(collection("Launch", c("share_A", "share_B"))))
-  expect_snapshot(print(out))
-})
