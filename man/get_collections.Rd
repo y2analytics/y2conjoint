@@ -28,8 +28,8 @@ get_collections(cjt)
 
 # A run_scenario() result carries one collection per competitive set.
 market <- competitive_set(
-  spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-  spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Launch"
 )
 get_collections(run_scenario(cjt, market))

@@ -1,15 +1,15 @@
 #' Compute the total utility of a product
 #'
-#' A product is described by a [spec], which selects one or more levels from each
-#' collection (attribute). This function turns that description into a single
-#' utility per respondent by:
+#' A product is described by a [product], which selects one or more levels from
+#' each collection (attribute). This function turns that description into a
+#' single utility per respondent by:
 #' 1. combining the selected levels *within* each collection into one value
 #'    (e.g. [pmax()] takes the best available level, which is how co-branded
 #'    products that list two brands are handled), and
 #' 2. summing those per-collection values *across* collections.
 #'
 #' @param x A [conjoint_df].
-#' @param spec A [spec].
+#' @param product A [product].
 #' @param combine_fn How to combine multiple selected levels within a collection.
 #'   Either a single function applied to every collection (the default,
 #'   [pmax()]), or a named list mapping collection names to functions. Any
@@ -18,7 +18,7 @@
 #' @return A numeric vector, one utility per row of `x`.
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
-#' flagship <- spec(
+#' flagship <- product(
 #'   cjt,
 #'   c("Northwind", "$299", "20 hours", "256 GB", "Black"),
 #'   name = "Flagship"
@@ -26,15 +26,15 @@
 #' head(compute_product_utility(cjt, flagship))
 #'
 #' # Sum the brand levels of a co-branded product instead of taking the best.
-#' co_brand <- spec(
+#' co_brand <- product(
 #'   cjt,
 #'   c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black")
 #' )
 #' head(compute_product_utility(cjt, co_brand, combine_fn = list(Brand = `+`)))
 #' @export
-compute_product_utility <- function(x, spec, combine_fn = pmax) {
+compute_product_utility <- function(x, product, combine_fn = pmax) {
   # Keep only the collections this product actually selects a level from.
-  selections <- purrr::keep(spec@selections, \(levels) length(levels) > 0)
+  selections <- purrr::keep(product@selections, \(levels) length(levels) > 0)
 
   # A product that selects nothing has zero utility for everyone.
   if (length(selections) == 0) {
@@ -87,8 +87,8 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
 #' market <- competitive_set(
-#'   spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-#'   spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+#'   product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+#'   product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
 #'   name = "Launch"
 #' )
 #' run_scenario(cjt, market)
@@ -101,7 +101,7 @@ compute_product_utility <- function(x, spec, combine_fn = pmax) {
 #'
 #' # Compare two competitive sets side by side.
 #' refresh <- competitive_set(
-#'   spec(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
+#'   product(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
 #'   name = "Refresh"
 #' )
 #' run_scenario(cjt, list(market, refresh))
@@ -115,7 +115,7 @@ run_scenario <- function(
 ) {
   sets <- normalize_competitive_sets(competitive_set)
   purrr::walk(sets, function(set) {
-    check_specs_columns(x, set@specs)
+    check_products_columns(x, set@products)
   })
   check_combine_fn(combine_fn, x)
   # From here the inputs are validated, so the rest is pure computation.
@@ -124,7 +124,7 @@ run_scenario <- function(
 
   # Score each set on its own, then stitch the per-set results together.
   per_set <- purrr::map(sets, function(set) {
-    run_one_scenario(x, set@specs, combine_fn, scaling_factor, by_vars)
+    run_one_scenario(x, set@products, combine_fn, scaling_factor, by_vars)
   })
   combine_scenarios(per_set, sets)
 }
@@ -153,9 +153,9 @@ normalize_competitive_sets <- function(x, call = rlang::caller_env()) {
 # Score one competitive set. Without grouping this is a one-row tibble of shares;
 # with grouping it carries group_var/group_level/n columns per subgroup.
 #' @keywords internal
-run_one_scenario <- function(x, specs, combine_fn, scaling_factor, by_vars) {
+run_one_scenario <- function(x, products, combine_fn, scaling_factor, by_vars) {
   if (length(by_vars) == 0) {
-    return(scenario_shares(x, specs, combine_fn, scaling_factor))
+    return(scenario_shares(x, products, combine_fn, scaling_factor))
   }
 
   # Treat each grouping column marginally: split the sample by its values,
@@ -181,7 +181,7 @@ run_one_scenario <- function(x, specs, combine_fn, scaling_factor, by_vars) {
           group_level = as.character(level),
           n = nrow(subgroup)
         ),
-        scenario_shares(subgroup, specs, combine_fn, scaling_factor)
+        scenario_shares(subgroup, products, combine_fn, scaling_factor)
       )
     })
   })
@@ -255,13 +255,13 @@ subgroup_levels <- function(values) {
 # Score one (sub)sample: one utility column per product plus NONE, softmax to
 # per-respondent choice probabilities, then average to mean shares.
 #' @keywords internal
-scenario_shares <- function(x, specs, combine_fn, scaling_factor) {
+scenario_shares <- function(x, products, combine_fn, scaling_factor) {
   # One utility column per product (rows = respondents).
   product_utilities <- purrr::map(
-    specs,
-    \(spec) compute_product_utility(x, spec, combine_fn) * scaling_factor
+    products,
+    \(product) compute_product_utility(x, product, combine_fn) * scaling_factor
   )
-  names(product_utilities) <- spec_output_names(specs)
+  names(product_utilities) <- product_output_names(products)
 
   # Add NONE as one more column so the "choose nothing" option competes with
   # the products for share.
@@ -310,21 +310,21 @@ resolve_combine_fn <- function(combine_fn, collection) {
   if (is.null(fn)) pmax else fn
 }
 
-# Name each product's output column after its spec, falling back to a positional
-# name (product_1, product_2, ...) for unnamed specs.
+# Name each product's output column after its own name, falling back to a
+# positional name (product_1, product_2, ...) for unnamed products.
 #' @keywords internal
-spec_output_names <- function(specs) {
-  purrr::imap_chr(specs, function(spec, i) {
-    nm <- spec@name
+product_output_names <- function(products) {
+  purrr::imap_chr(products, function(product, i) {
+    nm <- product@name
     if (length(nm) == 1 && nzchar(nm)) nm else paste0("product_", i)
   })
 }
 
-# Fail early if any spec references a level that is not a column of `x`.
+# Fail early if any product references a level that is not a column of `x`.
 #' @keywords internal
-check_specs_columns <- function(x, specs, call = rlang::caller_env()) {
-  used <- unique(purrr::list_c(purrr::map(specs, \(spec) {
-    purrr::list_c(spec@selections)
+check_products_columns <- function(x, products, call = rlang::caller_env()) {
+  used <- unique(purrr::list_c(purrr::map(products, \(product) {
+    purrr::list_c(product@selections)
   })))
   missing <- setdiff(used, names(x))
   if (length(missing) > 0) {

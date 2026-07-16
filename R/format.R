@@ -1,7 +1,7 @@
 # Shared inline styling for the package's print methods, so that collection
 # names, level values, and object names look the same wherever they appear.
 # Keeping them here (rather than inlining cli calls in each print method) is what
-# guarantees a spec printed on its own looks identical to one printed inside a
+# guarantees a product printed on its own looks identical to one printed inside a
 # competitive_set.
 
 #' @keywords internal
@@ -16,7 +16,7 @@ fmt_level <- function(x) {
   cli::make_ansi_style("cyan3")(x)
 }
 
-# Object names (a spec's or set's name): bold green.
+# Object names (a product's or set's name): bold green.
 #' @keywords internal
 fmt_object_name <- function(x) {
   cli::style_bold(cli::make_ansi_style("green4")(x))

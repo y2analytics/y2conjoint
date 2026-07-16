@@ -1,46 +1,46 @@
-# competitive_set rejects non-spec elements
+# competitive_set rejects non-product elements
 
     Code
       competitive_set(1, 2)
     Condition
       Error:
       ! <y2conjoint::competitive_set> object is invalid:
-      - @specs must contain only spec objects
+      - @products must contain only product objects
 
-# competitive_set prints named and unnamed specs
+# competitive_set prints named and unnamed products
 
     Code
       print(cs)
     Output
-      <competitive_set> Launch: 3 specs: A, B, and 1 unnamed spec
+      <competitive_set> Launch: 3 products: A, B, and 1 unnamed product
       
-        <spec> A
+        <product> A
         * Brand: Northwind
         * Price: $199
         * Battery: 20 hours
         * Storage: 256 GB
         * Color: Black
       
-        <spec> B
+        <product> B
         * Brand: Cascade
         * Price: $299
         * Battery: 10 hours
         * Storage: 128 GB
         * Color: Blue
       
-        <spec> (unnamed)
+        <product> (unnamed)
         * Brand: Meridian
         * Price: $399
         * Battery: 30 hours
         * Storage: 512 GB
         * Color: Silver
 
-# competitive_set rejects specs over different collections
+# competitive_set rejects products over different collections
 
     Code
-      competitive_set(spec(brand_only, "Northwind"), spec(price_only, "$249"))
+      competitive_set(product(brand_only, "Northwind"), product(price_only, "$249"))
     Condition
       Error:
       ! <y2conjoint::competitive_set> object is invalid:
-      - all specs must reference the same collections
+      - all products must reference the same collections
 
