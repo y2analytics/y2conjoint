@@ -221,17 +221,13 @@ shares <- run_scenario(cjt, market)
 shares
 ```
 
-Each column is one phone's mean preference share, plus a `share_NONE` column for
-respondents who would choose none of these phones - the whole row sums to 1.
-`competitive_set()`'s `none` argument (default `TRUE`) controls whether NONE
-competes at all; setting `none = FALSE` forces a choice among the set's products
-and drops `share_NONE` from the result.
-
-The result is a `collected_df` — a tibble that carries **collections** of columns
-that belong together. Here the four `share_` columns (three phones plus NONE)
-form a single collection named after the set (`Launch`), which the print header
-reports. That grouping becomes useful when a run bundles several competitive
-sets, as we will see [below](#comparing-several-competitive-sets).
+The result is a plain tibble with one row per competitive set - here just
+`Launch` - identified by its `competitive_set` column, and one `share_*` column
+per phone plus `share_NONE` for respondents who would choose none of these
+phones. Excluding `competitive_set`, the row sums to 1. `competitive_set()`'s
+`none` argument (default `TRUE`) controls whether NONE competes at all; setting
+`none = FALSE` forces a choice among the set's products and drops `share_NONE`
+from the result.
 
 ```{r}
 #| label: plot
@@ -239,7 +235,11 @@ sets, as we will see [below](#comparing-several-competitive-sets).
 #| fig-width: 6
 #| fig-height: 3
 shares |>
-  tidyr::pivot_longer(everything(), names_to = "product", values_to = "share") |>
+  tidyr::pivot_longer(
+    starts_with("share_"),
+    names_to = "product",
+    values_to = "share"
+  ) |>
   mutate(product = sub("^share_", "", product)) |>
   ggplot(aes(share, reorder(product, share))) +
   geom_col() +
@@ -336,12 +336,11 @@ comparison <- run_scenario(cjt, list(market, refresh))
 comparison
 ```
 
-The `collected_df` now carries one collection per set (`Launch` and `Refresh`),
-which the print header lists. Both lineups sell a "Value" and a "Premium" phone
-(and both include NONE by default), so those share columns would collide;
-`run_scenario()` disambiguates them with a `_i` suffix naming the set they came
-from (`_1` = the launch set, `_2` = the refresh). "Mainstream" is unique to the
-launch lineup, so its column keeps its plain name.
+The result now has one row per competitive set (`Launch` and `Refresh`). Both
+lineups sell a "Value" phone, so `share_Value` is shared by both rows - each
+set's own share appears in its own row. "Mainstream" and "Premium" phones are
+unique to one lineup, so `share_Mainstream`/`share_Premium` are `NA` in the
+other set's row.
 
 ```{r}
 #| label: multi-set-plot
@@ -349,10 +348,15 @@ launch lineup, so its column keeps its plain name.
 #| fig-width: 6
 #| fig-height: 3
 comparison |>
-  tidyr::pivot_longer(everything(), names_to = "product", values_to = "share") |>
+  tidyr::pivot_longer(
+    starts_with("share_"),
+    names_to = "product",
+    values_to = "share"
+  ) |>
   mutate(product = sub("^share_", "", product)) |>
   ggplot(aes(share, reorder(product, share))) +
   geom_col() +
+  facet_wrap(vars(competitive_set)) +
   labs(x = "Preference share", y = NULL)
 ```
 

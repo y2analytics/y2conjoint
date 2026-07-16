@@ -17,10 +17,10 @@ run_scenario(
 
 \item{competitive_set}{A \link{competitive_set}, or a list of them. When a list is
 supplied, the scenario is run on each set individually and the results are
-column-bound together. Any \verb{share_*} column name shared by more than one set
-is disambiguated by appending \verb{_i}, where \code{i} is the 1-based position of the
-set it came from (unique names are left untouched). Each set's own \code{none}
-property controls whether NONE competes for share within that set.}
+row-bound together, one row per set. A \verb{share_*} column shared by more
+than one set stays a single column, holding \code{NA} for any set whose
+products do not include it. Each set's own \code{none} property controls
+whether NONE competes for share within that set.}
 
 \item{combine_fn}{How to combine multiple selected levels within a collection.
 Either a single function applied to every collection (the default,
@@ -38,14 +38,14 @@ value, then the results for every selected column are stacked. Defaults to
 \code{NULL} (whole sample).}
 }
 \value{
-A \link{collected_df}: the \verb{share_*} columns produced by the
-competitive set(s) - one per product, plus \code{share_NONE} for each set that
-includes the outside good - with one \link{collection} per set grouping that
-set's columns (named after the set, or \code{set_i} when unnamed). When \code{.by}
-is \code{NULL} it has one row; when \code{.by} is supplied it carries \code{group_var}
-(the grouping column), \code{group_level} (its value, as a string), and \code{n}
-(respondents in the subgroup) alongside the \verb{share_*} columns, one row per
-grouping variable and value.
+A tibble with one row per competitive set (named by the set's
+\code{competitive_set} column, or \code{set_i} when unnamed) and one \verb{share_*}
+column per product, plus \code{share_NONE} for each set that includes the
+outside good. A product not present in a given set's row is \code{NA} there.
+When \code{.by} is supplied, each set instead contributes one row per grouping
+variable and value, carrying \code{group_var} (the grouping column),
+\code{group_level} (its value, as a string), and \code{n} (respondents in the
+subgroup) alongside \code{competitive_set} and the \verb{share_*} columns.
 }
 \description{
 Applies a logit (softmax) choice model: each respondent's utility for every
@@ -81,7 +81,7 @@ forced_choice <- competitive_set(
 )
 run_scenario(cjt, forced_choice)
 
-# Compare two competitive sets side by side.
+# Compare two competitive sets side by side: one row per competitive set.
 refresh <- competitive_set(
   product(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
   name = "Refresh"

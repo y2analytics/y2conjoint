@@ -20,8 +20,7 @@ A \code{collected_df}.
 A \code{collected_df} is a tibble subclass that carries a list of \link{collection}s as
 metadata: each collection names a group of columns that belong together. It is
 the base type behind \link{conjoint_df} (which adds an outside-good column and
-column protection) and is also what \code{\link[=run_scenario]{run_scenario()}} returns, where each
-collection groups the \verb{share_*} columns produced by one \link{competitive_set}.
+column protection).
 }
 \details{
 Unlike a \code{conjoint_df}, a plain \code{collected_df} does not protect its columns:
