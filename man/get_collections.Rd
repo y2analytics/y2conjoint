@@ -18,19 +18,11 @@ A list of \link{collection} objects.
 \description{
 Returns the list of \link{collection}s carried by a \link{collected_df} (including a
 \link{conjoint_df}, which is a \code{collected_df}). Each collection names a group of
-columns that belong together - the conjoint attributes of a \code{conjoint_df}, or
-the \verb{share_*} columns of one \link{competitive_set} in a \code{\link[=run_scenario]{run_scenario()}} result.
+columns that belong together - for example, the conjoint attributes of a
+\code{conjoint_df}.
 }
 \examples{
 # A conjoint_df carries one collection per attribute.
 cjt <- conjoint_df(example_utilities, example_crosswalk)
 get_collections(cjt)
-
-# A run_scenario() result carries one collection per competitive set.
-market <- competitive_set(
-  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
-  name = "Launch"
-)
-get_collections(run_scenario(cjt, market))
 }

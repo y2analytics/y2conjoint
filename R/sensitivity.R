@@ -60,6 +60,11 @@ sensitivity_analysis <- function(
   } else {
     "(unnamed)"
   }
+  # run_scenario() now returns one row per competitive set with a leading
+  # `competitive_set` column, so the product's own share must be pulled out by
+  # its column name (the same name S7::set_props() below preserves across
+  # perturbations) rather than by position.
+  product_col <- paste0("share_", product_output_names(list(product)))
 
   # The unchanged product scored on its own is the reference every delta is
   # measured against.
@@ -68,7 +73,7 @@ sensitivity_analysis <- function(
     competitive_set(product),
     combine_fn = combine_fn,
     scaling_factor = scaling_factor
-  )[[1]]
+  )[[product_col]]
 
   # Build one row per single-level perturbation, carrying the modified selection
   # vector so we can re-score it below.
@@ -98,7 +103,7 @@ sensitivity_analysis <- function(
         competitive_set(S7::set_props(product, selections = selections)),
         combine_fn = combine_fn,
         scaling_factor = scaling_factor
-      )[[1]]
+      )[[product_col]]
     }
   )
 

@@ -65,10 +65,10 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' @param x A [conjoint_df] of individual-level utilities.
 #' @param competitive_set A [competitive_set], or a list of them. When a list is
 #'   supplied, the scenario is run on each set individually and the results are
-#'   column-bound together. Any `share_*` column name shared by more than one set
-#'   is disambiguated by appending `_i`, where `i` is the 1-based position of the
-#'   set it came from (unique names are left untouched). Each set's own `none`
-#'   property controls whether NONE competes for share within that set.
+#'   row-bound together, one row per set. A `share_*` column shared by more
+#'   than one set stays a single column, holding `NA` for any set whose
+#'   products do not include it. Each set's own `none` property controls
+#'   whether NONE competes for share within that set.
 #' @param combine_fn How to combine multiple selected levels within a collection.
 #'   Either a single function applied to every collection (the default,
 #'   [pmax()]), or a named list mapping collection names to functions. Any
@@ -82,14 +82,14 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #'   value, then the results for every selected column are stacked. Defaults to
 #'   `NULL` (whole sample).
 #'
-#' @return A [collected_df]: the `share_*` columns produced by the
-#'   competitive set(s) - one per product, plus `share_NONE` for each set that
-#'   includes the outside good - with one [collection] per set grouping that
-#'   set's columns (named after the set, or `set_i` when unnamed). When `.by`
-#'   is `NULL` it has one row; when `.by` is supplied it carries `group_var`
-#'   (the grouping column), `group_level` (its value, as a string), and `n`
-#'   (respondents in the subgroup) alongside the `share_*` columns, one row per
-#'   grouping variable and value.
+#' @return A tibble with one row per competitive set (named by the set's
+#'   `competitive_set` column, or `set_i` when unnamed) and one `share_*`
+#'   column per product, plus `share_NONE` for each set that includes the
+#'   outside good. A product not present in a given set's row is `NA` there.
+#'   When `.by` is supplied, each set instead contributes one row per grouping
+#'   variable and value, carrying `group_var` (the grouping column),
+#'   `group_level` (its value, as a string), and `n` (respondents in the
+#'   subgroup) alongside `competitive_set` and the `share_*` columns.
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
 #' market <- competitive_set(
@@ -114,7 +114,7 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' )
 #' run_scenario(cjt, forced_choice)
 #'
-#' # Compare two competitive sets side by side.
+#' # Compare two competitive sets side by side: one row per competitive set.
 #' refresh <- competitive_set(
 #'   product(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
 #'   name = "Refresh"
@@ -149,7 +149,7 @@ run_scenario <- function(
       set@none
     )
   })
-  combine_scenarios(per_set, sets)
+  stack_scenarios(per_set, sets)
 }
 
 # Accept either a single competitive_set or a list of them, and validate that a
@@ -218,52 +218,22 @@ run_one_scenario <- function(
   dplyr::bind_rows(purrr::list_flatten(rows))
 }
 
-# Column-bind the per-set results into one collected_df: keep any grouping
-# columns once (they are identical across sets, which are scored on the same
-# sample), disambiguate share names shared by more than one set with a `_i`
-# suffix, and record one collection per set.
+# Stack the per-set results into one plain tibble: label each set's rows with
+# a `competitive_set` column (the set's name, or `set_i` when unnamed), then
+# bind all sets' rows together. Products that are not part of a given set
+# become NA in that set's row(s).
 #' @keywords internal
-combine_scenarios <- function(per_set, sets) {
-  is_share <- \(nms) startsWith(nms, "share_")
-  share_by_set <- purrr::map(per_set, \(tbl) names(tbl)[is_share(names(tbl))])
-
-  # A share name appearing in more than one set is renamed in every set it
-  # appears in; unique names are left untouched.
-  all_share <- purrr::list_c(share_by_set)
-  colliding <- unique(all_share[duplicated(all_share)])
-
-  renamed <- purrr::imap(per_set, function(tbl, i) {
-    shares <- share_by_set[[i]]
-    new_shares <- dplyr::if_else(
-      shares %in% colliding,
-      paste0(shares, "_", i),
-      shares
-    )
-    names(tbl)[match(shares, names(tbl))] <- new_shares
-    tbl
-  })
-
-  # Grouping columns (group_var/group_level/n) are identical across sets, so keep
-  # the first set's copy and bind only the share columns from the rest.
-  first <- renamed[[1]]
-  if (length(renamed) > 1) {
-    others <- purrr::map(renamed[-1], \(tbl) tbl[is_share(names(tbl))])
-    combined <- dplyr::bind_cols(first, !!!others)
-  } else {
-    combined <- first
-  }
-
-  collections <- purrr::imap(renamed, function(tbl, i) {
+stack_scenarios <- function(per_set, sets) {
+  labeled <- purrr::imap(per_set, function(tbl, i) {
     set <- sets[[i]]
     name <- if (length(set@name) == 1 && nzchar(set@name)) {
       set@name
     } else {
       paste0("set_", i)
     }
-    collection(name = name, levels = names(tbl)[is_share(names(tbl))])
+    dplyr::bind_cols(tibble::tibble(competitive_set = name), tbl)
   })
-
-  new_collected_df(combined, collections)
+  dplyr::bind_rows(labeled)
 }
 
 # The distinct values of a grouping column, in the order subgroups should be
@@ -320,16 +290,15 @@ softmax_rows <- function(m) {
   weights / rowSums(weights)
 }
 
-# Return a one-row tibble of rounded shares, one column per product in the
-# competitive set plus `share_NONE` when the set includes the outside good.
+# Return a one-row tibble of rounded shares, one `share_*` column per product
+# in the competitive set plus `share_NONE` when the set includes the outside
+# good.
 #' @keywords internal
 format_shares <- function(shares) {
   shares <- round(shares, 3)
   names(shares)[names(shares) == "none"] <- "NONE"
-
-  out <- tibble::as_tibble(as.list(shares))
-  names(out) <- paste0("share_", names(shares))
-  out
+  names(shares) <- paste0("share_", names(shares))
+  tibble::as_tibble(as.list(shares))
 }
 
 # Resolve the combine function for a single collection. `combine_fn` is either

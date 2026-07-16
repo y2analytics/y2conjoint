@@ -43,7 +43,7 @@ test_that("run_scenario rejects combine_fn naming an unknown collection", {
   )
 })
 
-test_that("run_scenario returns one named share column per product", {
+test_that("run_scenario returns one named share_* column per product plus competitive_set", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
     product(
@@ -54,7 +54,8 @@ test_that("run_scenario returns one named share column per product", {
     product(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"), name = "B")
   )
   out <- run_scenario(cjt, cs)
-  expect_named(out, c("share_A", "share_B", "share_NONE"))
+  expect_named(out, c("competitive_set", "share_A", "share_B", "share_NONE"))
+  expect_equal(nrow(out), 1)
 })
 
 test_that("run_scenario names unnamed products sequentially", {
@@ -64,7 +65,10 @@ test_that("run_scenario names unnamed products sequentially", {
     product(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"))
   )
   out <- run_scenario(cjt, cs)
-  expect_named(out, c("share_product_1", "share_product_2", "share_NONE"))
+  expect_named(
+    out,
+    c("competitive_set", "share_product_1", "share_product_2", "share_NONE")
+  )
 })
 
 test_that("run_scenario matches a hand-computed softmax", {
@@ -100,7 +104,10 @@ test_that("run_scenario .by adds group_var, group_level, and n columns", {
   )
   out <- run_scenario(cjt, cs, .by = region)
 
-  expect_named(out, c("group_var", "group_level", "n", "share_A", "share_NONE"))
+  expect_named(
+    out,
+    c("competitive_set", "group_var", "group_level", "n", "share_A", "share_NONE")
+  )
   expect_true(all(out$group_var == "region"))
   expect_setequal(out$group_level, as.character(unique(cjt$region)))
   # Subgroup sizes partition the sample.
@@ -119,14 +126,8 @@ test_that("run_scenario .by stacks several grouping variables marginally", {
   out <- run_scenario(cjt, cs, .by = c(region, gender))
 
   expect_setequal(unique(out$group_var), c("region", "gender"))
-  # Each variable's subgroups independently partition the sample. Summarise on a
-  # plain tibble so the aggregation does not incidentally warn about dropping the
-  # scenario's share collections.
-  totals <- dplyr::summarise(
-    tibble::as_tibble(out),
-    total = sum(n),
-    .by = group_var
-  )
+  # Each variable's subgroups independently partition the sample.
+  totals <- dplyr::summarise(out, total = sum(n), .by = group_var)
   expect_true(all(totals$total == nrow(cjt)))
 })
 
@@ -188,7 +189,7 @@ test_that("run_scenario .by uses value labels for haven_labelled columns", {
   expect_equal(sum(out$n), nrow(cjt))
 })
 
-test_that("run_scenario returns a collected_df with one collection per set", {
+test_that("run_scenario returns a plain tibble with a competitive_set column", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
     product(
@@ -200,14 +201,13 @@ test_that("run_scenario returns a collected_df with one collection per set", {
   )
   out <- run_scenario(cjt, cs)
 
-  expect_s3_class(out, "collected_df")
-  collections <- get_collections(out)
-  expect_length(collections, 1)
-  expect_equal(collections[[1]]@name, "Launch")
-  expect_equal(collections[[1]]@levels, c("share_A", "share_NONE"))
+  expect_s3_class(out, "tbl_df")
+  expect_false(inherits(out, "collected_df"))
+  expect_equal(out$competitive_set, "Launch")
+  expect_named(out, c("competitive_set", "share_A", "share_NONE"))
 })
 
-test_that("run_scenario accepts a list of competitive sets and binds columns", {
+test_that("run_scenario accepts a list of competitive sets and stacks rows", {
   cjt <- sample_conjoint()
   launch <- competitive_set(
     product(
@@ -227,22 +227,19 @@ test_that("run_scenario accepts a list of competitive sets and binds columns", {
   )
   out <- run_scenario(cjt, list(launch, refresh))
 
-  expect_s3_class(out, "collected_df")
-  # Both sets include NONE by default, so their share_NONE columns collide and
-  # get a set-index suffix just like any other colliding share name.
-  expect_named(out, c("share_A", "share_NONE_1", "share_B", "share_NONE_2"))
-  # Each set is scored independently, so its column matches a solo run.
-  expect_equal(out$share_A, run_scenario(cjt, launch)$share_A)
-  expect_equal(out$share_B, run_scenario(cjt, refresh)$share_B)
-
-  collections <- get_collections(out)
-  expect_equal(
-    purrr::map_chr(collections, \(cl) cl@name),
-    c("Launch", "Refresh")
-  )
+  expect_equal(out$competitive_set, c("Launch", "Refresh"))
+  expect_named(out, c("competitive_set", "share_A", "share_NONE", "share_B"))
+  # Each set is scored independently, so its column matches a solo run. The
+  # product from the other set is absent from this set's row (NA).
+  launch_row <- out[out$competitive_set == "Launch", ]
+  refresh_row <- out[out$competitive_set == "Refresh", ]
+  expect_equal(launch_row$share_A, run_scenario(cjt, launch)$share_A)
+  expect_equal(refresh_row$share_B, run_scenario(cjt, refresh)$share_B)
+  expect_true(is.na(launch_row$share_B))
+  expect_true(is.na(refresh_row$share_A))
 })
 
-test_that("run_scenario disambiguates colliding share names with a set index", {
+test_that("run_scenario reuses a device column shared by several sets", {
   cjt <- sample_conjoint()
   first <- competitive_set(
     product(
@@ -267,24 +264,14 @@ test_that("run_scenario disambiguates colliding share names with a set index", {
   )
   out <- run_scenario(cjt, list(first, second))
 
-  # Only the colliding "Value" and "NONE" columns get a _i suffix; "Premium"
-  # is untouched.
+  # "Value" is shared by both sets and stays a single share_Value column; each
+  # set's row holds its own share for it. "Premium" only appears in Launch, so
+  # it is NA for Refresh.
   expect_named(
     out,
-    c(
-      "share_Value_1",
-      "share_Premium",
-      "share_NONE_1",
-      "share_Value_2",
-      "share_NONE_2"
-    )
+    c("competitive_set", "share_Value", "share_Premium", "share_NONE")
   )
-  collections <- get_collections(out)
-  expect_equal(
-    collections[[1]]@levels,
-    c("share_Value_1", "share_Premium", "share_NONE_1")
-  )
-  expect_equal(collections[[2]]@levels, c("share_Value_2", "share_NONE_2"))
+  expect_true(is.na(out$share_Premium[out$competitive_set == "Refresh"]))
 })
 
 test_that("run_scenario names an unnamed set set_i", {
@@ -297,10 +284,10 @@ test_that("run_scenario names an unnamed set set_i", {
     )
   )
   out <- run_scenario(cjt, list(cs))
-  expect_equal(get_collections(out)[[1]]@name, "set_1")
+  expect_equal(out$competitive_set, "set_1")
 })
 
-test_that("run_scenario keeps grouping columns once across multiple sets", {
+test_that("run_scenario combines competitive_set with .by grouping across sets", {
   cjt <- sample_conjoint()
   launch <- competitive_set(
     product(
@@ -323,16 +310,19 @@ test_that("run_scenario keeps grouping columns once across multiple sets", {
   expect_named(
     out,
     c(
+      "competitive_set",
       "group_var",
       "group_level",
       "n",
       "share_A",
-      "share_NONE_1",
-      "share_B",
-      "share_NONE_2"
+      "share_NONE",
+      "share_B"
     )
   )
-  expect_equal(sum(out$n), nrow(cjt))
+  expect_setequal(out$competitive_set, c("Launch", "Refresh"))
+  # Each set still partitions the whole sample across its own subgroup rows.
+  totals <- dplyr::summarise(out, total = sum(n), .by = competitive_set)
+  expect_true(all(totals$total == nrow(cjt)))
 })
 
 test_that("run_scenario excludes NONE when the set's none property is FALSE", {
@@ -409,12 +399,14 @@ test_that("run_scenario applies none independently across multiple sets", {
     none = FALSE
   )
   out <- run_scenario(cjt, list(with_none, without_none))
+  launch_row <- out[out$competitive_set == "Launch", ]
+  refresh_row <- out[out$competitive_set == "Refresh", ]
 
   # A lone product with NONE excluded takes 100% share.
-  expect_equal(out$share_B, 1)
+  expect_equal(refresh_row$share_B, 1)
   # The other set is unaffected and still competes against NONE.
   expect_equal(
-    out$share_A,
+    launch_row$share_A,
     run_scenario(cjt, with_none)$share_A
   )
 })

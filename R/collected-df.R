@@ -3,8 +3,7 @@
 #' A `collected_df` is a tibble subclass that carries a list of [collection]s as
 #' metadata: each collection names a group of columns that belong together. It is
 #' the base type behind [conjoint_df] (which adds an outside-good column and
-#' column protection) and is also what [run_scenario()] returns, where each
-#' collection groups the `share_*` columns produced by one [competitive_set].
+#' column protection).
 #'
 #' Unlike a `conjoint_df`, a plain `collected_df` does not protect its columns:
 #' ordinary dplyr and base operations may freely edit them. The class is
@@ -88,8 +87,8 @@ is_collected_df <- function(x) {
 #'
 #' Returns the list of [collection]s carried by a [collected_df] (including a
 #' [conjoint_df], which is a `collected_df`). Each collection names a group of
-#' columns that belong together - the conjoint attributes of a `conjoint_df`, or
-#' the `share_*` columns of one [competitive_set] in a [run_scenario()] result.
+#' columns that belong together - for example, the conjoint attributes of a
+#' `conjoint_df`.
 #'
 #' @param x A [collected_df].
 #' @param call The calling environment, used to report errors. Defaults to the
@@ -100,14 +99,6 @@ is_collected_df <- function(x) {
 #' # A conjoint_df carries one collection per attribute.
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
 #' get_collections(cjt)
-#'
-#' # A run_scenario() result carries one collection per competitive set.
-#' market <- competitive_set(
-#'   product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-#'   product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
-#'   name = "Launch"
-#' )
-#' get_collections(run_scenario(cjt, market))
 #' @export
 get_collections <- function(x, call = rlang::caller_env()) {
   if (!is_collected_df(x)) {
