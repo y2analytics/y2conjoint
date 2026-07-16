@@ -106,7 +106,14 @@ test_that("run_scenario .by adds group_var, group_level, and n columns", {
 
   expect_named(
     out,
-    c("competitive_set", "group_var", "group_level", "n", "share_A", "share_NONE")
+    c(
+      "competitive_set",
+      "group_var",
+      "group_level",
+      "n",
+      "share_A",
+      "share_NONE"
+    )
   )
   expect_true(all(out$group_var == "region"))
   expect_setequal(out$group_level, as.character(unique(cjt$region)))

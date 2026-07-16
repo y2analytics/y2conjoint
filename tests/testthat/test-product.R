@@ -32,7 +32,10 @@ test_that("product errors on an unknown level", {
 
 test_that("product errors on a duplicated level", {
   cjt <- sample_conjoint()
-  expect_snapshot(error = TRUE, product(cjt, c("Northwind", "Northwind", "$199")))
+  expect_snapshot(
+    error = TRUE,
+    product(cjt, c("Northwind", "Northwind", "$199"))
+  )
 })
 
 test_that("product allows an absence level selected on its own", {
