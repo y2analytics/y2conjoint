@@ -4,13 +4,17 @@
 \alias{competitive_set}
 \title{Bundle specifications into a competitive set}
 \usage{
-competitive_set(..., name = character())
+competitive_set(..., name = character(), none = TRUE)
 }
 \arguments{
 \item{...}{\link{product} objects that compete for share. Pass them individually;
 they are collected into the set's \code{products}.}
 
 \item{name}{An optional single string naming the set.}
+
+\item{none}{Whether the NONE outside good ("choose nothing") competes for
+share alongside the set's products. Defaults to \code{TRUE}. Passed through to
+\code{\link[=run_scenario]{run_scenario()}}.}
 }
 \value{
 A \code{competitive_set} object.
@@ -25,5 +29,13 @@ competitive_set(
   product(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship"),
   product(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"), name = "Budget"),
   name = "Launch"
+)
+
+# Exclude the NONE outside good, forcing a choice between the products.
+competitive_set(
+  product(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship"),
+  product(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"), name = "Budget"),
+  name = "Launch",
+  none = FALSE
 )
 }

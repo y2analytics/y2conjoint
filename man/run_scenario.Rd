@@ -19,7 +19,8 @@ run_scenario(
 supplied, the scenario is run on each set individually and the results are
 column-bound together. Any \verb{share_*} column name shared by more than one set
 is disambiguated by appending \verb{_i}, where \code{i} is the 1-based position of the
-set it came from (unique names are left untouched).}
+set it came from (unique names are left untouched). Each set's own \code{none}
+property controls whether NONE competes for share within that set.}
 
 \item{combine_fn}{How to combine multiple selected levels within a collection.
 Either a single function applied to every collection (the default,
@@ -49,7 +50,9 @@ grouping variable and value.
 Applies a logit (softmax) choice model: each respondent's utility for every
 product is turned into a probability of choosing it, and those probabilities
 are averaged across respondents to give each product's mean preference share.
-The NONE outside good competes for share as a "choose nothing" option.
+The NONE outside good competes for share as a "choose nothing" option,
+unless a competitive set's \code{none} property is \code{FALSE}, in which case that
+set's products are forced to compete only against one another.
 }
 \examples{
 cjt <- conjoint_df(example_utilities, example_crosswalk)
@@ -65,6 +68,15 @@ run_scenario(cjt, market, scaling_factor = 2)
 
 # Shares within each region, then within each gender, stacked.
 run_scenario(cjt, market, .by = c(region, gender))
+
+# Exclude NONE so the products are forced to compete only with each other.
+forced_choice <- competitive_set(
+  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  name = "Launch",
+  none = FALSE
+)
+run_scenario(cjt, forced_choice)
 
 # Compare two competitive sets side by side.
 refresh <- competitive_set(

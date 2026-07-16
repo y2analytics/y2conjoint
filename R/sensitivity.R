@@ -108,6 +108,7 @@ sensitivity_analysis <- function(
 # Enumerate the single-level perturbations for one collection, returning a tibble
 # of candidate rows with the modified selection vector stored in `new_levels`.
 #' @keywords internal
+#' @importFrom rlang .data .env
 perturb_collection <- function(cl, current, multiple_select) {
   name <- cl@name
   levels <- collection_levels(cl)
@@ -176,13 +177,13 @@ sensitivity_tibble <- function(grid, baseline, product_name) {
   grid |>
     dplyr::mutate(
       .keep = "none",
-      Feature,
-      Level,
-      comparison,
-      preference_share,
-      baseline = baseline,
-      delta = preference_share - baseline,
-      product_name = product_name
+      .data$Feature,
+      .data$Level,
+      .data$comparison,
+      .data$preference_share,
+      baseline = .env$baseline,
+      delta = .data$preference_share - .env$baseline,
+      product_name = .env$product_name
     )
 }
 
