@@ -79,12 +79,20 @@ validate_competitive_set <- function(name, products, none) {
 S7::method(print, competitive_set) <- function(x, ...) {
   products <- x@products
   label <- if (length(x@name) == 1) x@name else "(unnamed)"
+  # NONE competes for share just like any other product in the set, so it
+  # counts and lists alongside them - it just isn't a `product` object, hence
+  # the separate `fmt_object_name("NONE")` rather than `format_product()`.
+  has_none <- length(x@none) == 1 && x@none
 
   named <- purrr::map_chr(products, function(p) {
     if (length(p@name) == 1 && nzchar(p@name)) p@name else NA_character_
   })
   named_names <- named[!is.na(named)]
+  if (has_none) {
+    named_names <- c("NONE", named_names)
+  }
   n_unnamed <- sum(is.na(named))
+  n_total <- length(products) + as.integer(has_none)
   unnamed_phrase <- paste0(
     n_unnamed,
     " unnamed product",
@@ -103,9 +111,16 @@ S7::method(print, competitive_set) <- function(x, ...) {
   # point.
   header <- cli::cli_fmt(
     cli::cli_text(
-      "{.cls competitive_set} {.strong {label}}: {length(products)} product{?s}: {descriptor}"
+      "{.cls competitive_set} {.strong {label}}: {n_total} product{?s}: {descriptor}"
     )
   )
+
+  # NONE is listed first, ahead of the set's actual products.
+  none_lines <- if (has_none) {
+    c("", paste0("  ", fmt_object_name("NONE")))
+  } else {
+    character()
+  }
 
   # Print each product indented so the set reads as a set of products. Reuse
   # format_product() (rather than capturing print output) so the products keep
@@ -115,14 +130,6 @@ S7::method(print, competitive_set) <- function(x, ...) {
     c("", paste0("  ", format_product(p)))
   }))
 
-  # NONE is not a product, so it gets its own indented entry (rather than going
-  # through format_product()) when it competes in this set.
-  none_lines <- if (length(x@none) == 1 && x@none) {
-    c("", paste0("  ", fmt_object_name("NONE")))
-  } else {
-    character()
-  }
-
-  cat(c(header, body, none_lines), sep = "\n")
+  cat(c(header, none_lines, body), sep = "\n")
   invisible(x)
 }
