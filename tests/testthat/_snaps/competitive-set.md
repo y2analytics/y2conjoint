@@ -12,7 +12,9 @@
     Code
       print(cs)
     Output
-      <competitive_set> Launch: 3 products: A, B, and 1 unnamed product
+      <competitive_set> Launch: 4 products: NONE, A, B, and 1 unnamed product
+      
+        NONE
       
         <product> A
         * Brand: Northwind
@@ -34,8 +36,6 @@
         * Battery: 30 hours
         * Storage: 512 GB
         * Color: Silver
-      
-        NONE
 
 # competitive_set rejects a non-scalar or missing none
 
@@ -60,7 +60,9 @@
     Code
       print(included)
     Output
-      <competitive_set> (unnamed): 1 product: A
+      <competitive_set> (unnamed): 2 products: NONE and A
+      
+        NONE
       
         <product> A
         * Brand: Northwind
@@ -68,8 +70,6 @@
         * Battery: 20 hours
         * Storage: 256 GB
         * Color: Black
-      
-        NONE
 
 ---
 
