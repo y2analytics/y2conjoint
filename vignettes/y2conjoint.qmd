@@ -86,7 +86,7 @@ renamed, or overwritten by accident.
 # Filtering rows and editing demographics is fine.
 cjt |>
   filter(age >= 40) |>
-  mutate(age_decade = age %/% 10 * 10)
+  mutate(age = age %/% 10 * 10)
 ```
 
 ```{r}
@@ -166,7 +166,7 @@ phone, where the combine function (below) decides how to merge them:
 co_brand <- product(
   cjt,
   c("Northwind", "Cascade", "Meridian", "$199", "10 hours", "128 GB", "Blue"),
-  name = "Co-brand"
+  name = "Co_brand"
 )
 
 co_brand
@@ -208,16 +208,16 @@ averages the probabilities into mean preference shares.
 
 ```{r}
 #| label: scenario
-market <- competitive_set(
+launch_market <- competitive_set(
   product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
   product(cjt, c("Cascade", "$299", "20 hours", "256 GB", "Silver"), name = "Mainstream"),
   product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Launch"
 )
 
-market 
+launch_market 
 
-shares <- run_scenario(cjt, market)
+shares <- run_scenario(cjt, launch_market)
 shares
 ```
 
@@ -264,7 +264,7 @@ co_market <- competitive_set(
     name = "Co-brand"
   ),
   product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
-  name = "Co-brand launch"
+  name = "Co_brand launch"
 )
 
 run_scenario(cjt, co_market, combine_fn = list(Brand = `+`))
@@ -279,7 +279,7 @@ known market conditions.
 
 ```{r}
 #| label: scaling
-run_scenario(cjt, market, scaling_factor = 2)
+run_scenario(cjt, launch_market, scaling_factor = 2)
 ```
 
 ## Preference shares by subgroup
@@ -291,7 +291,7 @@ each, and the results are stacked, with the subgroup size `n` reported alongside
 
 ```{r}
 #| label: by-region
-run_scenario(cjt, market, .by = region)
+run_scenario(cjt, launch_market, .by = region)
 ```
 
 The `n` column matters: a share computed from a handful of respondents is noisy,
@@ -302,7 +302,7 @@ so always check the base before reading too much into a subgroup.
 #| fig-alt: "Preference share by product across education groups."
 #| fig-width: 7
 #| fig-height: 3
-run_scenario(cjt, market, .by = education) |>
+run_scenario(cjt, launch_market, .by = education) |>
   tidyr::pivot_longer(
     starts_with("share_"),
     names_to = "product",
@@ -332,7 +332,7 @@ refresh <- competitive_set(
   name = "Refresh"
 )
 
-comparison <- run_scenario(cjt, list(market, refresh))
+comparison <- run_scenario(cjt, list(launch_market, refresh))
 comparison
 ```
 
