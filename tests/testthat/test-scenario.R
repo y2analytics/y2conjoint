@@ -54,7 +54,7 @@ test_that("run_scenario returns one named share column per product", {
     product(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"), name = "B")
   )
   out <- run_scenario(cjt, cs)
-  expect_named(out, c("share_A", "share_B"))
+  expect_named(out, c("share_A", "share_B", "share_NONE"))
 })
 
 test_that("run_scenario names unnamed products sequentially", {
@@ -64,7 +64,7 @@ test_that("run_scenario names unnamed products sequentially", {
     product(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"))
   )
   out <- run_scenario(cjt, cs)
-  expect_named(out, c("share_product_1", "share_product_2"))
+  expect_named(out, c("share_product_1", "share_product_2", "share_NONE"))
 })
 
 test_that("run_scenario matches a hand-computed softmax", {
@@ -100,7 +100,7 @@ test_that("run_scenario .by adds group_var, group_level, and n columns", {
   )
   out <- run_scenario(cjt, cs, .by = region)
 
-  expect_named(out, c("group_var", "group_level", "n", "share_A"))
+  expect_named(out, c("group_var", "group_level", "n", "share_A", "share_NONE"))
   expect_true(all(out$group_var == "region"))
   expect_setequal(out$group_level, as.character(unique(cjt$region)))
   # Subgroup sizes partition the sample.
@@ -204,7 +204,7 @@ test_that("run_scenario returns a collected_df with one collection per set", {
   collections <- get_collections(out)
   expect_length(collections, 1)
   expect_equal(collections[[1]]@name, "Launch")
-  expect_equal(collections[[1]]@levels, "share_A")
+  expect_equal(collections[[1]]@levels, c("share_A", "share_NONE"))
 })
 
 test_that("run_scenario accepts a list of competitive sets and binds columns", {
@@ -228,7 +228,9 @@ test_that("run_scenario accepts a list of competitive sets and binds columns", {
   out <- run_scenario(cjt, list(launch, refresh))
 
   expect_s3_class(out, "collected_df")
-  expect_named(out, c("share_A", "share_B"))
+  # Both sets include NONE by default, so their share_NONE columns collide and
+  # get a set-index suffix just like any other colliding share name.
+  expect_named(out, c("share_A", "share_NONE_1", "share_B", "share_NONE_2"))
   # Each set is scored independently, so its column matches a solo run.
   expect_equal(out$share_A, run_scenario(cjt, launch)$share_A)
   expect_equal(out$share_B, run_scenario(cjt, refresh)$share_B)
@@ -265,11 +267,24 @@ test_that("run_scenario disambiguates colliding share names with a set index", {
   )
   out <- run_scenario(cjt, list(first, second))
 
-  # Only the colliding "Value" columns get a _i suffix; "Premium" is untouched.
-  expect_named(out, c("share_Value_1", "share_Premium", "share_Value_2"))
+  # Only the colliding "Value" and "NONE" columns get a _i suffix; "Premium"
+  # is untouched.
+  expect_named(
+    out,
+    c(
+      "share_Value_1",
+      "share_Premium",
+      "share_NONE_1",
+      "share_Value_2",
+      "share_NONE_2"
+    )
+  )
   collections <- get_collections(out)
-  expect_equal(collections[[1]]@levels, c("share_Value_1", "share_Premium"))
-  expect_equal(collections[[2]]@levels, "share_Value_2")
+  expect_equal(
+    collections[[1]]@levels,
+    c("share_Value_1", "share_Premium", "share_NONE_1")
+  )
+  expect_equal(collections[[2]]@levels, c("share_Value_2", "share_NONE_2"))
 })
 
 test_that("run_scenario names an unnamed set set_i", {
@@ -305,7 +320,18 @@ test_that("run_scenario keeps grouping columns once across multiple sets", {
   )
   out <- run_scenario(cjt, list(launch, refresh), .by = region)
 
-  expect_named(out, c("group_var", "group_level", "n", "share_A", "share_B"))
+  expect_named(
+    out,
+    c(
+      "group_var",
+      "group_level",
+      "n",
+      "share_A",
+      "share_NONE_1",
+      "share_B",
+      "share_NONE_2"
+    )
+  )
   expect_equal(sum(out$n), nrow(cjt))
 })
 

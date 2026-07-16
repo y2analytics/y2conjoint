@@ -56,9 +56,11 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' Applies a logit (softmax) choice model: each respondent's utility for every
 #' product is turned into a probability of choosing it, and those probabilities
 #' are averaged across respondents to give each product's mean preference share.
-#' The NONE outside good competes for share as a "choose nothing" option,
-#' unless a competitive set's `none` property is `FALSE`, in which case that
-#' set's products are forced to compete only against one another.
+#' The NONE outside good competes for share as a "choose nothing" option and is
+#' returned as a `share_NONE` column, unless a competitive set's `none`
+#' property is `FALSE`, in which case that set's products are forced to
+#' compete only against one another and no `share_NONE` column is produced for
+#' it.
 #'
 #' @param x A [conjoint_df] of individual-level utilities.
 #' @param competitive_set A [competitive_set], or a list of them. When a list is
@@ -81,10 +83,11 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #'   `NULL` (whole sample).
 #'
 #' @return A [collected_df]: the `share_*` columns produced by the
-#'   competitive set(s), with one [collection] per set grouping that set's
-#'   columns (named after the set, or `set_i` when unnamed). When `.by` is
-#'   `NULL` it has one row; when `.by` is supplied it carries `group_var` (the
-#'   grouping column), `group_level` (its value, as a string), and `n`
+#'   competitive set(s) - one per product, plus `share_NONE` for each set that
+#'   includes the outside good - with one [collection] per set grouping that
+#'   set's columns (named after the set, or `set_i` when unnamed). When `.by`
+#'   is `NULL` it has one row; when `.by` is supplied it carries `group_var`
+#'   (the grouping column), `group_level` (its value, as a string), and `n`
 #'   (respondents in the subgroup) alongside the `share_*` columns, one row per
 #'   grouping variable and value.
 #' @examples
@@ -317,15 +320,15 @@ softmax_rows <- function(m) {
   weights / rowSums(weights)
 }
 
-# Drop the outside good and return a one-row tibble of rounded product shares,
-# one column per product in the competitive set.
+# Return a one-row tibble of rounded shares, one column per product in the
+# competitive set plus `share_NONE` when the set includes the outside good.
 #' @keywords internal
 format_shares <- function(shares) {
   shares <- round(shares, 3)
-  products <- shares[names(shares) != "none"]
+  names(shares)[names(shares) == "none"] <- "NONE"
 
-  out <- tibble::as_tibble(as.list(products))
-  names(out) <- paste0("share_", names(products))
+  out <- tibble::as_tibble(as.list(shares))
+  names(out) <- paste0("share_", names(shares))
   out
 }
 

@@ -39,10 +39,11 @@ value, then the results for every selected column are stacked. Defaults to
 }
 \value{
 A \link{collected_df}: the \verb{share_*} columns produced by the
-competitive set(s), with one \link{collection} per set grouping that set's
-columns (named after the set, or \code{set_i} when unnamed). When \code{.by} is
-\code{NULL} it has one row; when \code{.by} is supplied it carries \code{group_var} (the
-grouping column), \code{group_level} (its value, as a string), and \code{n}
+competitive set(s) - one per product, plus \code{share_NONE} for each set that
+includes the outside good - with one \link{collection} per set grouping that
+set's columns (named after the set, or \code{set_i} when unnamed). When \code{.by}
+is \code{NULL} it has one row; when \code{.by} is supplied it carries \code{group_var}
+(the grouping column), \code{group_level} (its value, as a string), and \code{n}
 (respondents in the subgroup) alongside the \verb{share_*} columns, one row per
 grouping variable and value.
 }
@@ -50,9 +51,11 @@ grouping variable and value.
 Applies a logit (softmax) choice model: each respondent's utility for every
 product is turned into a probability of choosing it, and those probabilities
 are averaged across respondents to give each product's mean preference share.
-The NONE outside good competes for share as a "choose nothing" option,
-unless a competitive set's \code{none} property is \code{FALSE}, in which case that
-set's products are forced to compete only against one another.
+The NONE outside good competes for share as a "choose nothing" option and is
+returned as a \code{share_NONE} column, unless a competitive set's \code{none}
+property is \code{FALSE}, in which case that set's products are forced to
+compete only against one another and no \code{share_NONE} column is produced for
+it.
 }
 \examples{
 cjt <- conjoint_df(example_utilities, example_crosswalk)

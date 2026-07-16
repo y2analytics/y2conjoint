@@ -221,15 +221,17 @@ shares <- run_scenario(cjt, market)
 shares
 ```
 
-Each column is one phone's mean preference share. The shares plus the `NONE`
-outside good's share sum to 1, so the remainder of the market goes to buyers who
-would choose none of these phones.
+Each column is one phone's mean preference share, plus a `share_NONE` column for
+respondents who would choose none of these phones - the whole row sums to 1.
+`competitive_set()`'s `none` argument (default `TRUE`) controls whether NONE
+competes at all; setting `none = FALSE` forces a choice among the set's products
+and drops `share_NONE` from the result.
 
 The result is a `collected_df` — a tibble that carries **collections** of columns
-that belong together. Here the three `share_` columns form a single collection
-named after the set (`Launch`), which the print header reports. That grouping
-becomes useful when a run bundles several competitive sets, as we will see
-[below](#comparing-several-competitive-sets).
+that belong together. Here the four `share_` columns (three phones plus NONE)
+form a single collection named after the set (`Launch`), which the print header
+reports. That grouping becomes useful when a run bundles several competitive
+sets, as we will see [below](#comparing-several-competitive-sets).
 
 ```{r}
 #| label: plot
@@ -335,11 +337,11 @@ comparison
 ```
 
 The `collected_df` now carries one collection per set (`Launch` and `Refresh`),
-which the print header lists. Both lineups sell a "Value" and a "Premium" phone,
-so those share columns would collide; `run_scenario()` disambiguates them with a
-`_i` suffix naming the set they came from (`_1` = the launch set, `_2` = the
-refresh). "Mainstream" is unique to the launch lineup, so its column keeps its
-plain name.
+which the print header lists. Both lineups sell a "Value" and a "Premium" phone
+(and both include NONE by default), so those share columns would collide;
+`run_scenario()` disambiguates them with a `_i` suffix naming the set they came
+from (`_1` = the launch set, `_2` = the refresh). "Mainstream" is unique to the
+launch lineup, so its column keeps its plain name.
 
 ```{r}
 #| label: multi-set-plot
