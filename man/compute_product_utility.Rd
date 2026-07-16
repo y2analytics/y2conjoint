@@ -4,12 +4,12 @@
 \alias{compute_product_utility}
 \title{Compute the total utility of a product}
 \usage{
-compute_product_utility(x, spec, combine_fn = pmax)
+compute_product_utility(x, product, combine_fn = pmax)
 }
 \arguments{
 \item{x}{A \link{conjoint_df}.}
 
-\item{spec}{A \link{spec}.}
+\item{product}{A \link{product}.}
 
 \item{combine_fn}{How to combine multiple selected levels within a collection.
 Either a single function applied to every collection (the default,
@@ -20,9 +20,9 @@ collection absent from the list falls back to \code{\link[=pmax]{pmax()}}.}
 A numeric vector, one utility per row of \code{x}.
 }
 \description{
-A product is described by a \link{spec}, which selects one or more levels from each
-collection (attribute). This function turns that description into a single
-utility per respondent by:
+A product is described by a \link{product}, which selects one or more levels from
+each collection (attribute). This function turns that description into a
+single utility per respondent by:
 \enumerate{
 \item combining the selected levels \emph{within} each collection into one value
 (e.g. \code{\link[=pmax]{pmax()}} takes the best available level, which is how co-branded
@@ -32,7 +32,7 @@ products that list two brands are handled), and
 }
 \examples{
 cjt <- conjoint_df(example_utilities, example_crosswalk)
-flagship <- spec(
+flagship <- product(
   cjt,
   c("Northwind", "$299", "20 hours", "256 GB", "Black"),
   name = "Flagship"
@@ -40,7 +40,7 @@ flagship <- spec(
 head(compute_product_utility(cjt, flagship))
 
 # Sum the brand levels of a co-branded product instead of taking the best.
-co_brand <- spec(
+co_brand <- product(
   cjt,
   c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black")
 )

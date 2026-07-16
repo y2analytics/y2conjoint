@@ -54,8 +54,8 @@ The NONE outside good competes for share as a "choose nothing" option.
 \examples{
 cjt <- conjoint_df(example_utilities, example_crosswalk)
 market <- competitive_set(
-  spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-  spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Launch"
 )
 run_scenario(cjt, market)
@@ -68,7 +68,7 @@ run_scenario(cjt, market, .by = c(region, gender))
 
 # Compare two competitive sets side by side.
 refresh <- competitive_set(
-  spec(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
+  product(cjt, c("Cascade", "$299", "30 hours", "512 GB", "Blue"), name = "Value"),
   name = "Refresh"
 )
 run_scenario(cjt, list(market, refresh))

@@ -1,6 +1,6 @@
 test_that("compute_product_utility combines within and sums across collections", {
   cjt <- sample_conjoint()
-  s <- spec(
+  p <- product(
     cjt,
     c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black")
   )
@@ -9,12 +9,12 @@ test_that("compute_product_utility combines within and sums across collections",
     cjt[["20 hours"]] +
     cjt[["256 GB"]] +
     cjt[["Black"]]
-  expect_equal(compute_product_utility(cjt, s), expected)
+  expect_equal(compute_product_utility(cjt, p), expected)
 })
 
 test_that("compute_product_utility accepts a per-collection combine_fn", {
   cjt <- sample_conjoint()
-  s <- spec(
+  p <- product(
     cjt,
     c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black")
   )
@@ -24,14 +24,18 @@ test_that("compute_product_utility accepts a per-collection combine_fn", {
     cjt[["20 hours"]] +
     cjt[["256 GB"]] +
     cjt[["Black"]]
-  actual <- compute_product_utility(cjt, s, combine_fn = list(Brand = `+`))
+  actual <- compute_product_utility(cjt, p, combine_fn = list(Brand = `+`))
   expect_equal(actual, expected)
 })
 
 test_that("run_scenario rejects combine_fn naming an unknown collection", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   expect_snapshot(
     error = TRUE,
@@ -42,22 +46,22 @@ test_that("run_scenario rejects combine_fn naming an unknown collection", {
 test_that("run_scenario returns one named share column per product", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(
+    product(
       cjt,
       c("Northwind", "$199", "20 hours", "256 GB", "Black"),
       name = "A"
     ),
-    spec(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"), name = "B")
+    product(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"), name = "B")
   )
   out <- run_scenario(cjt, cs)
   expect_named(out, c("share_A", "share_B"))
 })
 
-test_that("run_scenario names unnamed specs sequentially", {
+test_that("run_scenario names unnamed products sequentially", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black")),
-    spec(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"))
+    product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black")),
+    product(cjt, c("Cascade", "$299", "10 hours", "128 GB", "Blue"))
   )
   out <- run_scenario(cjt, cs)
   expect_named(out, c("share_product_1", "share_product_2"))
@@ -66,7 +70,11 @@ test_that("run_scenario names unnamed specs sequentially", {
 test_that("run_scenario matches a hand-computed softmax", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   util_a <- cjt$Northwind +
     cjt[["$199"]] +
@@ -84,7 +92,11 @@ test_that("run_scenario matches a hand-computed softmax", {
 test_that("run_scenario .by adds group_var, group_level, and n columns", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   out <- run_scenario(cjt, cs, .by = region)
 
@@ -98,7 +110,11 @@ test_that("run_scenario .by adds group_var, group_level, and n columns", {
 test_that("run_scenario .by stacks several grouping variables marginally", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   out <- run_scenario(cjt, cs, .by = c(region, gender))
 
@@ -117,7 +133,11 @@ test_that("run_scenario .by stacks several grouping variables marginally", {
 test_that("run_scenario subgroup shares match a manual subset", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   out <- run_scenario(cjt, cs, .by = region)
 
@@ -136,7 +156,11 @@ test_that("run_scenario .by places missing values in their own subgroup", {
     seg = rep(c("A", "B", NA), length.out = dplyr::n())
   )
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   out <- run_scenario(cjt, cs, .by = seg)
 
@@ -150,7 +174,11 @@ test_that("run_scenario .by places missing values in their own subgroup", {
 test_that("run_scenario .by uses value labels for haven_labelled columns", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   out <- run_scenario(cjt, cs, .by = education)
 
@@ -163,7 +191,7 @@ test_that("run_scenario .by uses value labels for haven_labelled columns", {
 test_that("run_scenario returns a collected_df with one collection per set", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(
+    product(
       cjt,
       c("Northwind", "$199", "20 hours", "256 GB", "Black"),
       name = "A"
@@ -182,7 +210,7 @@ test_that("run_scenario returns a collected_df with one collection per set", {
 test_that("run_scenario accepts a list of competitive sets and binds columns", {
   cjt <- sample_conjoint()
   launch <- competitive_set(
-    spec(
+    product(
       cjt,
       c("Northwind", "$199", "20 hours", "256 GB", "Black"),
       name = "A"
@@ -190,7 +218,11 @@ test_that("run_scenario accepts a list of competitive sets and binds columns", {
     name = "Launch"
   )
   refresh <- competitive_set(
-    spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Blue"), name = "B"),
+    product(
+      cjt,
+      c("Meridian", "$399", "30 hours", "512 GB", "Blue"),
+      name = "B"
+    ),
     name = "Refresh"
   )
   out <- run_scenario(cjt, list(launch, refresh))
@@ -211,12 +243,12 @@ test_that("run_scenario accepts a list of competitive sets and binds columns", {
 test_that("run_scenario disambiguates colliding share names with a set index", {
   cjt <- sample_conjoint()
   first <- competitive_set(
-    spec(
+    product(
       cjt,
       c("Northwind", "$199", "20 hours", "256 GB", "Black"),
       name = "Value"
     ),
-    spec(
+    product(
       cjt,
       c("Meridian", "$399", "30 hours", "512 GB", "Black"),
       name = "Premium"
@@ -224,7 +256,7 @@ test_that("run_scenario disambiguates colliding share names with a set index", {
     name = "Launch"
   )
   second <- competitive_set(
-    spec(
+    product(
       cjt,
       c("Cascade", "$299", "30 hours", "512 GB", "Blue"),
       name = "Value"
@@ -243,7 +275,11 @@ test_that("run_scenario disambiguates colliding share names with a set index", {
 test_that("run_scenario names an unnamed set set_i", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   out <- run_scenario(cjt, list(cs))
   expect_equal(get_collections(out)[[1]]@name, "set_1")
@@ -252,7 +288,7 @@ test_that("run_scenario names an unnamed set set_i", {
 test_that("run_scenario keeps grouping columns once across multiple sets", {
   cjt <- sample_conjoint()
   launch <- competitive_set(
-    spec(
+    product(
       cjt,
       c("Northwind", "$199", "20 hours", "256 GB", "Black"),
       name = "A"
@@ -260,7 +296,11 @@ test_that("run_scenario keeps grouping columns once across multiple sets", {
     name = "Launch"
   )
   refresh <- competitive_set(
-    spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Blue"), name = "B"),
+    product(
+      cjt,
+      c("Meridian", "$399", "30 hours", "512 GB", "Blue"),
+      name = "B"
+    ),
     name = "Refresh"
   )
   out <- run_scenario(cjt, list(launch, refresh), .by = region)
@@ -272,7 +312,11 @@ test_that("run_scenario keeps grouping columns once across multiple sets", {
 test_that("run_scenario rejects a list holding a non-competitive_set", {
   cjt <- sample_conjoint()
   cs <- competitive_set(
-    spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "A")
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    )
   )
   expect_error(run_scenario(cjt, list(cs, "nope")), "competitive_set")
 })

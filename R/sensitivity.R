@@ -1,7 +1,7 @@
 #' Sensitivity analysis for a product specification
 #'
 #' Measures how a product's preference share responds to changing one level at a
-#' time. The unchanged [spec] is scored on its own (against the NONE outside
+#' time. The unchanged [product] is scored on its own (against the NONE outside
 #' good) to give a `baseline` share, then each collection is perturbed
 #' individually - never in combination with another collection - and re-scored:
 #'
@@ -21,7 +21,7 @@
 #' @param multiple_select A character vector of collection names that may hold
 #'   more than one level at once. Collections not listed here are treated as
 #'   single-select.
-#' @param spec The [spec] to analyse.
+#' @param product The [product] to analyse.
 #' @param combine_fn How to combine multiple selected levels within a collection.
 #'   Passed through to [run_scenario()]. Either a single function applied to
 #'   every collection (the default, [pmax()]), or a named list mapping collection
@@ -32,21 +32,22 @@
 #' @return A tibble with one row per perturbation and the columns:
 #'   `Feature` (collection name), `Level` (the level added, removed, or
 #'   substituted), `comparison` (`"added_in"`, `"taken_out"`, or `"alone"`),
-#'   `preference_share` (share of the perturbed spec), `baseline` (share of the
-#'   unchanged spec), `delta` (`preference_share - baseline`), and `spec_name`.
+#'   `preference_share` (share of the perturbed product), `baseline` (share of
+#'   the unchanged product), `delta` (`preference_share - baseline`), and
+#'   `product_name`.
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
-#' flagship <- spec(
+#' flagship <- product(
 #'   cjt,
 #'   c("Northwind", "$299", "20 hours", "256 GB", "Black"),
 #'   name = "Flagship"
 #' )
-#' sensitivity_analysis(cjt, multiple_select = "Brand", spec = flagship)
+#' sensitivity_analysis(cjt, multiple_select = "Brand", product = flagship)
 #' @export
 sensitivity_analysis <- function(
   x,
   multiple_select,
-  spec,
+  product,
   combine_fn = pmax,
   scaling_factor = 1
 ) {
@@ -54,17 +55,17 @@ sensitivity_analysis <- function(
   collection_names <- purrr::map_chr(collections, \(cl) cl@name)
   check_multiple_select(multiple_select, collection_names)
 
-  spec_name <- if (length(spec@name) == 1 && nzchar(spec@name)) {
-    spec@name
+  product_name <- if (length(product@name) == 1 && nzchar(product@name)) {
+    product@name
   } else {
     "(unnamed)"
   }
 
-  # The unchanged spec scored on its own is the reference every delta is
+  # The unchanged product scored on its own is the reference every delta is
   # measured against.
   baseline <- run_scenario(
     x,
-    competitive_set(spec),
+    competitive_set(product),
     combine_fn = combine_fn,
     scaling_factor = scaling_factor
   )[[1]]
@@ -74,34 +75,34 @@ sensitivity_analysis <- function(
   grid <- purrr::map(collections, function(cl) {
     perturb_collection(
       cl,
-      current = spec@selections[[cl@name]],
+      current = product@selections[[cl@name]],
       multiple_select = multiple_select
     )
   })
   grid <- dplyr::bind_rows(grid)
 
-  # A spec with no valid perturbations (e.g. a single-level, single-select
+  # A product with no valid perturbations (e.g. a single-level, single-select
   # attribute) still returns the correct empty-shaped tibble.
   if (nrow(grid) == 0) {
-    return(sensitivity_tibble(grid, baseline, spec_name))
+    return(sensitivity_tibble(grid, baseline, product_name))
   }
 
   grid$preference_share <- purrr::map2_dbl(
     grid$Feature,
     grid$new_levels,
     function(feature, new_levels) {
-      selections <- spec@selections
+      selections <- product@selections
       selections[[feature]] <- new_levels
       run_scenario(
         x,
-        competitive_set(S7::set_props(spec, selections = selections)),
+        competitive_set(S7::set_props(product, selections = selections)),
         combine_fn = combine_fn,
         scaling_factor = scaling_factor
       )[[1]]
     }
   )
 
-  sensitivity_tibble(grid, baseline, spec_name)
+  sensitivity_tibble(grid, baseline, product_name)
 }
 
 # Enumerate the single-level perturbations for one collection, returning a tibble
@@ -160,7 +161,7 @@ perturb_collection <- function(cl, current, multiple_select) {
 
 # Assemble the final output columns in a fixed order.
 #' @keywords internal
-sensitivity_tibble <- function(grid, baseline, spec_name) {
+sensitivity_tibble <- function(grid, baseline, product_name) {
   if (nrow(grid) == 0) {
     return(tibble::tibble(
       Feature = character(),
@@ -169,7 +170,7 @@ sensitivity_tibble <- function(grid, baseline, spec_name) {
       preference_share = numeric(),
       baseline = numeric(),
       delta = numeric(),
-      spec_name = character()
+      product_name = character()
     ))
   }
   grid |>
@@ -181,7 +182,7 @@ sensitivity_tibble <- function(grid, baseline, spec_name) {
       preference_share,
       baseline = baseline,
       delta = preference_share - baseline,
-      spec_name = spec_name
+      product_name = product_name
     )
 }
 

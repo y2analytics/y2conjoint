@@ -1,6 +1,6 @@
 #' Define a product specification
 #'
-#' A `spec` records the levels that make up a single product, grouped by
+#' A `product` records the levels that make up a single product, grouped by
 #' collection. It is built from a flat vector of user-facing level names (any
 #' subset is allowed, including selecting several levels from one collection);
 #' the levels are validated against, and grouped by, the collections of `x`.
@@ -9,25 +9,25 @@
 #' @param levels A character vector of user-facing level names.
 #' @param name An optional single string naming the product.
 #'
-#' @return A `spec` object.
+#' @return A `product` object.
 #' @examples
 #' cjt <- conjoint_df(example_utilities, example_crosswalk)
 #'
 #' # Select one level per collection.
-#' spec(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship")
+#' product(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship")
 #'
 #' # Selecting several brands models a co-branded product.
-#' spec(
+#' product(
 #'   cjt,
 #'   c("Northwind", "Cascade", "$199", "10 hours", "128 GB", "Blue"),
 #'   name = "Co-brand"
 #' )
 #'
 #' # Any subset is allowed; omitted collections warn and contribute no utility.
-#' spec(cjt, c("Meridian", "$399"), name = "Sparse")
+#' product(cjt, c("Meridian", "$399"), name = "Sparse")
 #' @export
-spec <- S7::new_class(
-  "spec",
+product <- S7::new_class(
+  "product",
   properties = list(
     name = S7::class_character,
     selections = S7::class_list
@@ -40,12 +40,12 @@ spec <- S7::new_class(
     )
   },
   validator = function(self) {
-    validate_spec_fields(self@name, self@selections)
+    validate_product_fields(self@name, self@selections)
   }
 )
 
 #' @keywords internal
-validate_spec_fields <- function(name, selections) {
+validate_product_fields <- function(name, selections) {
   if (length(name) > 1) {
     return("@name must be a single string or empty")
   }
@@ -139,14 +139,14 @@ group_levels <- function(x, levels, call = rlang::caller_env()) {
   selections
 }
 
-# Render a spec to a character vector of cli-formatted lines. Kept separate from
-# the print method so competitive_set can reuse it *with* styling intact -
+# Render a product to a character vector of cli-formatted lines. Kept separate
+# from the print method so competitive_set can reuse it *with* styling intact -
 # cli_fmt() preserves colour and weight, unlike capturing printed output.
 #' @keywords internal
-format_spec <- function(x) {
+format_product <- function(x) {
   label <- if (length(x@name) == 1) x@name else "(unnamed)"
   cli::cli_fmt({
-    cli::cli_text("{.cls spec} {fmt_object_name(label)}")
+    cli::cli_text("{.cls product} {fmt_object_name(label)}")
     for (nm in names(x@selections)) {
       chosen <- x@selections[[nm]]
       value <- if (length(chosen) == 0) {
@@ -159,7 +159,7 @@ format_spec <- function(x) {
   })
 }
 
-S7::method(print, spec) <- function(x, ...) {
-  cat(format_spec(x), sep = "\n")
+S7::method(print, product) <- function(x, ...) {
+  cat(format_product(x), sep = "\n")
   invisible(x)
 }

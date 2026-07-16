@@ -103,7 +103,7 @@ to drop the guardrails.
 ## Attributes are collections
 
 `conjoint_df()` builds a [collection] for each attribute from the crosswalk, but
-it is worth understanding them directly, because specs (below) are validated
+it is worth understanding them directly, because products (below) are validated
 against them. A plain `collection()` describes an unordered attribute, while
 `ordered_collection()` records a meaningful order — exactly the distinction
 between a phone's brand and its price:
@@ -143,14 +143,14 @@ An absence level is mutually exclusive with other levels of the same attribute �
 phone cannot simultaneously have "No camera" and a 48 MP camera — and the package
 enforces that when you build a product (next section).
 
-## Describing products with specs
+## Describing products
 
-A `spec` describes one product by selecting levels across collections. Selecting
+A `product` describes one product by selecting levels across collections. Selecting
 a single level per collection is the common case:
 
 ```{r}
-#| label: spec
-flagship <- spec(
+#| label: product
+flagship <- product(
   cjt,
   c("Meridian", "$399", "30 hours", "512 GB", "Black"),
   name = "Flagship"
@@ -162,8 +162,8 @@ You may select *several* levels within one collection — useful for a co-brande
 phone, where the combine function (below) decides how to merge them:
 
 ```{r}
-#| label: spec-cobrand
-co_brand <- spec(
+#| label: product-cobrand
+co_brand <- product(
   cjt,
   c("Northwind", "Cascade", "Meridian", "$199", "10 hours", "128 GB", "Blue"),
   name = "Co-brand"
@@ -173,22 +173,22 @@ co_brand
 ```
 
 Absence levels are the exception: because they mean "none of this feature", they
-cannot be paired with another level from the same attribute. A spec that tries
+cannot be paired with another level from the same attribute. A product that tries
 to is rejected:
 
 ```{r}
-#| label: spec-absence
+#| label: product-absence
 #| error: true
-spec(
+product(
   list(brand, price, camera),
   c("Northwind", "$199", "No camera", "48 MP")
 )
 ```
 
-## From spec to utility
+## From product to utility
 
 `compute_product_utility()` is the building block underneath everything else: it
-collapses a spec into a single utility per respondent by combining the selected
+collapses a product into a single utility per respondent by combining the selected
 levels within each attribute and summing across attributes.
 
 ```{r}
@@ -209,9 +209,9 @@ averages the probabilities into mean preference shares.
 ```{r}
 #| label: scenario
 market <- competitive_set(
-  spec(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-  spec(cjt, c("Cascade", "$299", "20 hours", "256 GB", "Silver"), name = "Mainstream"),
-  spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
+  product(cjt, c("Cascade", "$299", "20 hours", "256 GB", "Silver"), name = "Mainstream"),
+  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Launch"
 )
 
@@ -256,12 +256,12 @@ list** that sums the `Brand` utilities; any collection you omit falls back to
 ```{r}
 #| label: combine-fn
 co_market <- competitive_set(
-  spec(
+  product(
     cjt,
     c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black"),
     name = "Co-brand"
   ),
-  spec(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Co-brand launch"
 )
 
@@ -325,8 +325,8 @@ lineups side by side. Here we pit the launch lineup against a possible refresh:
 ```{r}
 #| label: multi-set
 refresh <- competitive_set(
-  spec(cjt, c("Cascade", "$199", "30 hours", "512 GB", "Blue"), name = "Value"),
-  spec(cjt, c("Meridian", "$299", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(cjt, c("Cascade", "$199", "30 hours", "512 GB", "Blue"), name = "Value"),
+  product(cjt, c("Meridian", "$299", "30 hours", "512 GB", "Black"), name = "Premium"),
   name = "Refresh"
 )
 
@@ -357,7 +357,7 @@ comparison |>
 ## Sensitivity analysis
 
 Once you have a candidate phone, the next question is usually "which change would
-move share the most?". `sensitivity_analysis()` perturbs a spec one level at a
+move share the most?". `sensitivity_analysis()` perturbs a product one level at a
 time and reports how each change shifts preference share against a baseline.
 
 For a single-select attribute it swaps the chosen level for each alternative
@@ -367,7 +367,7 @@ multiple-select — modelling co-branding — and everything else as single-sele
 
 ```{r}
 #| label: sensitivity
-sens <- sensitivity_analysis(cjt, multiple_select = "Brand", spec = flagship)
+sens <- sensitivity_analysis(cjt, multiple_select = "Brand", product = flagship)
 sens
 ```
 

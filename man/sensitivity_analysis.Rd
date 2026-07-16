@@ -7,7 +7,7 @@
 sensitivity_analysis(
   x,
   multiple_select,
-  spec,
+  product,
   combine_fn = pmax,
   scaling_factor = 1
 )
@@ -19,7 +19,7 @@ sensitivity_analysis(
 more than one level at once. Collections not listed here are treated as
 single-select.}
 
-\item{spec}{The \link{spec} to analyse.}
+\item{product}{The \link{product} to analyse.}
 
 \item{combine_fn}{How to combine multiple selected levels within a collection.
 Passed through to \code{\link[=run_scenario]{run_scenario()}}. Either a single function applied to
@@ -33,12 +33,13 @@ softmax. Passed through to \code{\link[=run_scenario]{run_scenario()}}. Defaults
 A tibble with one row per perturbation and the columns:
 \code{Feature} (collection name), \code{Level} (the level added, removed, or
 substituted), \code{comparison} (\code{"added_in"}, \code{"taken_out"}, or \code{"alone"}),
-\code{preference_share} (share of the perturbed spec), \code{baseline} (share of the
-unchanged spec), \code{delta} (\code{preference_share - baseline}), and \code{spec_name}.
+\code{preference_share} (share of the perturbed product), \code{baseline} (share of
+the unchanged product), \code{delta} (\code{preference_share - baseline}), and
+\code{product_name}.
 }
 \description{
 Measures how a product's preference share responds to changing one level at a
-time. The unchanged \link{spec} is scored on its own (against the NONE outside
+time. The unchanged \link{product} is scored on its own (against the NONE outside
 good) to give a \code{baseline} share, then each collection is perturbed
 individually - never in combination with another collection - and re-scored:
 }
@@ -59,10 +60,10 @@ own) rather than an \code{"added_in"}.
 }
 \examples{
 cjt <- conjoint_df(example_utilities, example_crosswalk)
-flagship <- spec(
+flagship <- product(
   cjt,
   c("Northwind", "$299", "20 hours", "256 GB", "Black"),
   name = "Flagship"
 )
-sensitivity_analysis(cjt, multiple_select = "Brand", spec = flagship)
+sensitivity_analysis(cjt, multiple_select = "Brand", product = flagship)
 }

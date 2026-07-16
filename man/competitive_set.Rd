@@ -7,8 +7,8 @@
 competitive_set(..., name = character())
 }
 \arguments{
-\item{...}{\link{spec} objects that compete for share. Pass them individually;
-they are collected into the set's \code{specs}.}
+\item{...}{\link{product} objects that compete for share. Pass them individually;
+they are collected into the set's \code{products}.}
 
 \item{name}{An optional single string naming the set.}
 }
@@ -16,14 +16,14 @@ they are collected into the set's \code{specs}.}
 A \code{competitive_set} object.
 }
 \description{
-A \code{competitive_set} is an ordered list of \link{spec}s that compete for share in a
-scenario. All specs must reference the same set of collections.
+A \code{competitive_set} is an ordered list of \link{product}s that compete for share in a
+scenario. All products must reference the same set of collections.
 }
 \examples{
 cjt <- conjoint_df(example_utilities, example_crosswalk)
 competitive_set(
-  spec(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship"),
-  spec(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"), name = "Budget"),
+  product(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship"),
+  product(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"), name = "Budget"),
   name = "Launch"
 )
 }
