@@ -31,6 +31,5 @@
       product(cols, c("No camera", "8 MP", "A"))
     Condition
       Error in `product()`:
-      x Absence level "No camera" cannot be combined with other levels.
-      ! An absence level must be selected on its own within its collection.
+      x Absence level "No camera" cannot be combined with other levels within its collection.
 
