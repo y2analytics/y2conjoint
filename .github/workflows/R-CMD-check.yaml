@@ -66,9 +66,9 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          R -e 'options(repos = c(CRAN = "https://cloud.r-project.org"))'
-          R -e 'if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")'
-          R -e 'pak::pkg_install("github::Adam-Hubbs/pkgdown")'
+          Rscript -e 'options(repos = c(CRAN = "https://cloud.r-project.org"))'
+          Rscript -e 'if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")'
+          Rscript -e 'pak::pkg_install("github::Adam-Hubbs/pkgdown")'
 
       - uses: r-lib/actions/check-r-package@v2
         with:
