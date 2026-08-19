@@ -61,6 +61,15 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      # Install pak and then install pkgdown from your fork so the job uses your fix
+      - name: Install pak and pkgdown from Adam-Hubbs fork
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          R -e 'options(repos = c(CRAN = "https://cloud.r-project.org"))'
+          R -e 'if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")'
+          R -e 'pak::pkg_install("github::Adam-Hubbs/pkgdown")'
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
