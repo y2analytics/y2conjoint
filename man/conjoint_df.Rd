@@ -4,7 +4,7 @@
 \alias{conjoint_df}
 \title{Create a conjoint data frame}
 \usage{
-conjoint_df(data, crosswalk, none = "NONE")
+conjoint_df(data, crosswalk, none_col = "NONE")
 }
 \arguments{
 \item{data}{A data frame of individual-level utilities. Level columns are
@@ -20,7 +20,7 @@ collection may be flagged, and it defaults to no absence levels when the
 column is missing. It is coerced to a tibble internally, which gives
 stricter column access (no partial matching) than a base data frame.}
 
-\item{none}{The name of the outside-good column. Defaults to \code{"NONE"}.}
+\item{none_col}{The name of the outside-good column. Defaults to \code{"NONE"}.}
 }
 \value{
 A \code{conjoint_df}.

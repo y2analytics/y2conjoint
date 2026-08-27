@@ -192,9 +192,7 @@ run_one_scenario <- function(
   # score every subgroup, and stack the per-column results.
   rows <- purrr::map(by_vars, function(var) {
     values <- x[[var]]
-    # Survey data often arrives with SPSS-style value labels (a haven_labelled
-    # column of integer codes). Group on the labels so the output reads in human
-    # terms rather than as bare codes.
+
     if (inherits(values, "haven_labelled")) {
       values <- haven::as_factor(values)
     }
