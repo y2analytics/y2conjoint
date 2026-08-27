@@ -1,0 +1,9 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  y2conjoint: y2conjoint.html
+last_built: 2026-08-27T22:54Z
+urls:
+  reference: https://y2analytics.github.io/y2conjoint/reference
+  article: https://y2analytics.github.io/y2conjoint/articles
