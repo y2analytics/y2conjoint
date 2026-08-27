@@ -25,9 +25,13 @@ export(product)
 export(protected_cols)
 export(run_scenario)
 export(sensitivity_analysis)
-importFrom(dplyr,dplyr_col_modify)
-importFrom(dplyr,dplyr_reconstruct)
+importFrom(dplyr,
+  dplyr_col_modify,
+  dplyr_reconstruct
+)
 importFrom(haven,as_factor)
-importFrom(rlang,"%||%")
-importFrom(rlang,.data)
-importFrom(rlang,.env)
+importFrom(rlang,
+  "%||%",
+  .data,
+  .env
+)
