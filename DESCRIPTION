@@ -7,7 +7,6 @@ Description: Provides data structures and helper functions for working with conj
 License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
 Suggests:
     ggplot2,
     quarto,
@@ -27,3 +26,4 @@ Imports:
     tibble,
     tidyselect
 LazyData: true
+Config/roxygen2/version: 8.1.0
