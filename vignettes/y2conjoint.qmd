@@ -8,6 +8,18 @@ knitr:
   opts_chunk:
     collapse: true
     comment: "#>"
+format: 
+  html:
+    code-overflow: wrap
+    include-in-header:
+      - text: |
+          <style>
+          /* Forces raw text execution output to wrap horizontally */
+          div.cell-output pre code {
+              white-space: pre-wrap !important;
+              word-break: break-all !important;
+          }
+          </style>
 ---
 
 ```{r}
@@ -19,20 +31,20 @@ library(ggplot2)
 ```
 
 `y2conjoint` provides data structures and functions for working with the output
-of a choice-based conjoint study. This article walks through a full example
+of a choice-based [conjoint study](https://online.hbs.edu/blog/post/what-is-conjoint-analysis). This article walks through a full example
 using a simulated **cell-phone** study: loading raw utilities, describing the
 attributes, defining products, estimating preference shares (overall and by
-subgroup), and stress-testing a design with a sensitivity analysis.
+subgroup), and tweaking a design with a sensitivity analysis.
 
 The phones in this study vary on five attributes — **Brand**, **Price**,
-**Battery** life, **Storage**, and **Color** — and the goal is to understand how
+**Battery life**, **Storage**, and **Color** — and the goal is to understand how
 those attributes drive choice.
 
 ## The raw data
 
 A conjoint model produces one *part-worth utility* per respondent per attribute
 level. These arrive in a terse "model format" where columns are named
-`A[NUM]B[NUM]` — attribute *i*, level *j*. The package ships a small simulated
+`A[NUM-i]B[NUM-j]` — attribute *i*, level *j*. The package includes a small simulated
 example:
 
 ```{r}
@@ -42,7 +54,8 @@ head(example_utilities)
 
 Alongside the utilities we need a **crosswalk** that says what each column means:
 which attribute (collection) it belongs to, its human-readable name, and — for
-ordered attributes like price — its rank.
+ordered attributes like price — its rank. Creating the crosswalk is the thing that will take you the most time. 
+It must be created manually. You need to carefully check the attributes and levels and make sure they are in the correct order. 
 
 ```{r}
 #| label: crosswalk
@@ -52,11 +65,19 @@ example_crosswalk
 Here `Brand` and `Color` are unordered (`collection_order` is `NA`), while
 `Price`, `Battery`, and `Storage` are ordered.
 
+A crosswalk must contain the following columns:
+- old_name
+- user_name
+- collection_name
+
+It may also include these additional columns:
+- collection_order
+- absense_levels
+
 ## Building a conjoint_df
 
-`conjoint_df()` renames the model-format columns to their user-facing names and
-records the attribute structure as metadata. Extra columns (IDs, demographics)
-are carried along untouched.
+`conjoint_df()` takes the utilities (model output), and the crosswalk, and returns a conjoint dataframe - the basis for all analysis. It renames the model-format columns to their user-facing names and records the attribute structure as metadata. 
+Extra columns (IDs, demographics) are carried along untouched.
 
 ```{r}
 #| label: build
@@ -64,8 +85,9 @@ cjt <- conjoint_df(example_utilities, example_crosswalk)
 cjt
 ```
 
+You may print a conjoint dataframe to get useful meta-data. 
 The print header summarizes the collections (ordered ones are annotated
-`(ordered)`), the outside-good column, and how many extra columns are present.
+`(ordered)`), which column was modeled as the NONE column, and how many extra (non-utility) columns are present.
 
 ### Protected columns
 
@@ -97,21 +119,25 @@ cjt |>
   mutate(Northwind = 0)
 ```
 
-If you genuinely need to reshape the utilities, call `tibble::as_tibble()` first
-to drop the guardrails.
+If you genuinely need to reshape the utilities, call `tibble::as_tibble()` to convert the conjoint 
+dataframe into a tibble which drops the guardrails.
 
 ## Attributes are collections
 
-`conjoint_df()` builds a [collection] for each attribute from the crosswalk, but
+`conjoint_df()` builds a `collection()` for each attribute from the crosswalk, but
 it is worth understanding them directly, because products (below) are validated
 against them. A plain `collection()` describes an unordered attribute, while
 `ordered_collection()` records a meaningful order — exactly the distinction
-between a phone's brand and its price:
+between a phone's brand and its price. `collection()` takes the name of the attribute/collection, 
+and a list of levels. 
 
 ```{r}
 #| label: collections
-brand <- collection("Brand", c("Northwind", "Cascade", "Meridian"))
-price <- ordered_collection("Price", c("$199", "$299", "$399"))
+brand <- collection(
+  name = "Brand",
+  levels = c("Northwind", "Cascade", "Meridian")
+)
+price <- ordered_collection(name = "Price", levels = c("$199", "$299", "$399"))
 
 brand
 price
@@ -132,10 +158,11 @@ study had also tested a camera, "No camera" would be that level. Flag it with
 ```{r}
 #| label: absence
 camera <- collection(
-  "Camera",
-  c("No camera", "12 MP", "48 MP"),
+  name = "Camera",
+  levels = c("No camera", "12 MP", "48 MP"),
   absence = "No camera"
 )
+
 camera
 ```
 
@@ -151,21 +178,30 @@ a single level per collection is the common case:
 ```{r}
 #| label: product
 flagship <- product(
-  cjt,
-  c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+  x = cjt,
+  levels = c("Meridian", "$399", "30 hours", "512 GB", "Black"),
   name = "Flagship"
 )
 flagship
 ```
 
 You may select *several* levels within one collection — useful for a co-branded
-phone, where the combine function (below) decides how to merge them:
+phone, where the combine function (below) decides how to merge them. You do not have to specify which 
+collection a level is a part of since it is required that levels are unique.
 
 ```{r}
 #| label: product-cobrand
 co_brand <- product(
-  cjt,
-  c("Northwind", "Cascade", "Meridian", "$199", "10 hours", "128 GB", "Blue"),
+  x = cjt,
+  levels = c(
+    "Northwind",
+    "Cascade",
+    "Meridian",
+    "$199",
+    "10 hours",
+    "128 GB",
+    "Blue"
+  ),
   name = "Co_brand"
 )
 
@@ -180,10 +216,12 @@ to is rejected:
 #| label: product-absence
 #| error: true
 product(
-  list(brand, price, camera),
-  c("Northwind", "$199", "No camera", "48 MP")
+  x = list(brand, price, camera),
+  levels = c("Northwind", "$199", "No camera", "48 MP")
 )
 ```
+
+Products can take a `conjoint_df()` object, or a list of collections to validate against. You may want to pass lists of collections if you do bridging work across multiple studies. 
 
 ## From product to utility
 
@@ -193,7 +231,8 @@ levels within each attribute and summing across attributes.
 
 ```{r}
 #| label: utility
-head(compute_product_utility(cjt, flagship))
+compute_product_utility(x = cjt, product = flagship) |>
+  head()
 ```
 
 On its own this vector answers "how appealing is this phone to each respondent?".
@@ -208,14 +247,30 @@ averages the probabilities into mean preference shares.
 
 ```{r}
 #| label: scenario
+value <- product(
+  cjt,
+  c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+  name = "Value"
+)
+mainstream <- product(
+  cjt,
+  c("Cascade", "$299", "20 hours", "256 GB", "Silver"),
+  name = "Mainstream"
+)
+premium <- product(
+  cjt,
+  c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+  name = "Premium"
+)
+
 launch_market <- competitive_set(
-  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-  product(cjt, c("Cascade", "$299", "20 hours", "256 GB", "Silver"), name = "Mainstream"),
-  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  value,
+  mainstream,
+  premium,
   name = "Launch"
 )
 
-launch_market 
+launch_market
 
 shares <- run_scenario(cjt, launch_market)
 shares
@@ -228,6 +283,8 @@ phones. Excluding `competitive_set`, the row sums to 1. `competitive_set()`'s
 `none` argument (default `TRUE`) controls whether NONE competes at all; setting
 `none = FALSE` forces a choice among the set's products and drops `share_NONE`
 from the result.
+
+You can easily visualize the outputs from run_scenario and plot them:
 
 ```{r}
 #| label: plot
@@ -251,23 +308,37 @@ shares |>
 When a product selects more than one level from a collection, `combine_fn`
 decides how to merge them. The default, `pmax()`, takes the best available level
 — a reasonable rule for co-branding, where buyers respond to the more appealing
-brand. To instead model the two brands *reinforcing* one another, pass a **named
-list** that sums the `Brand` utilities; any collection you omit falls back to
-`pmax()`:
+brand. To instead model the two brands *reinforcing* one another, pass a 
+**named list** that sums the `Brand` utilities; any collection you omit falls 
+back to `pmax()`. Combination functions can be set per-collection, not per-product. 
+This ensures that we are comparing products with the same market assumptions.
 
 ```{r}
 #| label: combine-fn
+
+co_brand <- product(
+  x = cjt,
+  levels = c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black"),
+  name = "Co-brand"
+)
+
 co_market <- competitive_set(
-  product(
-    cjt,
-    c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black"),
-    name = "Co-brand"
-  ),
-  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  co_brand,
+  premium,
   name = "Co_brand launch"
 )
 
-run_scenario(cjt, co_market, combine_fn = list(Brand = `+`))
+run_scenario(
+  x = cjt,
+  competitive_set = co_market,
+  combine_fn = `+`
+) # Sets the combination function as + for all collections
+
+run_scenario(
+  cjt,
+  co_market,
+  combine_fn = list(Brand = `+`)
+) # Sets the combination function as + for just Brand
 ```
 
 ### Scaling choice probabilities
@@ -275,7 +346,9 @@ run_scenario(cjt, co_market, combine_fn = list(Brand = `+`))
 `scaling_factor` multiplies every utility before the softmax. Values above 1
 sharpen the shares toward the most attractive phone; values below 1 flatten them
 toward an even split. It is a convenient handle for calibrating a simulator to
-known market conditions.
+known market conditions. If you know what sales for a certain product are relative 
+to another product, you can increase or decrease the scaling factor until the 
+simulator matches the known market conditions. 
 
 ```{r}
 #| label: scaling
@@ -296,6 +369,8 @@ run_scenario(cjt, launch_market, .by = region)
 
 The `n` column matters: a share computed from a handful of respondents is noisy,
 so always check the base before reading too much into a subgroup.
+
+Again, the output of run_scenario is easy to plot:
 
 ```{r}
 #| label: by-education-plot
@@ -322,25 +397,25 @@ run_scenario(cjt, launch_market, .by = education) |>
 
 `run_scenario()` also accepts a **list** of competitive sets. It scores each one
 independently and binds the results together — the quickest way to compare whole
-lineups side by side. Here we pit the launch lineup against a possible refresh:
+lineups side by side. Here we pit the launch lineup against a market where we 
+discontinue the mainstream product:
 
 ```{r}
 #| label: multi-set
-refresh <- competitive_set(
-  product(cjt, c("Cascade", "$199", "30 hours", "512 GB", "Blue"), name = "Value"),
-  product(cjt, c("Meridian", "$299", "30 hours", "512 GB", "Black"), name = "Premium"),
-  name = "Refresh"
+deprecate_mainstream <- competitive_set(
+  value,
+  premium,
+  name = "Deprecate Mainstream"
 )
 
-comparison <- run_scenario(cjt, list(launch_market, refresh))
+comparison <- run_scenario(cjt, list(launch_market, deprecate_mainstream))
 comparison
 ```
 
-The result now has one row per competitive set (`Launch` and `Refresh`). Both
-lineups sell a "Value" phone, so `share_Value` is shared by both rows - each
-set's own share appears in its own row. "Mainstream" and "Premium" phones are
-unique to one lineup, so `share_Mainstream`/`share_Premium` are `NA` in the
-other set's row.
+The result now has one row per competitive set (`Launch` and `deprecate_mainstream`). Both
+lineups sell a "Value" phone and a "Premium" phone, so `share_Value` and `share_Premium` are 
+shared by both rows - each set's own share appears in its own row. "Mainstream"  phones are
+unique to the launch_market lineup, so `share_Mainstream` are `NA` in the deprecate_mainstream row.
 
 ```{r}
 #| label: multi-set-plot
@@ -363,7 +438,7 @@ comparison |>
 ## Sensitivity analysis
 
 Once you have a candidate phone, the next question is usually "which change would
-move share the most?". `sensitivity_analysis()` perturbs a product one level at a
+move share the most?". `sensitivity_analysis()` modifies a product one level at a
 time and reports how each change shifts preference share against a baseline.
 
 For a single-select attribute it swaps the chosen level for each alternative
@@ -398,4 +473,4 @@ sens |>
 
 Read this as a to-do list for the design: the changes at the extremes are where
 price, battery, or storage decisions matter most for this phone's share.
-```
+
