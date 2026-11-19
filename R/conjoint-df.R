@@ -22,7 +22,7 @@
 #'   collection may be flagged, and it defaults to no absence levels when the
 #'   column is missing. It is coerced to a tibble internally, which gives
 #'   stricter column access (no partial matching) than a base data frame.
-#' @param none_col The name of the outside-good column. Defaults to `"NONE"`.
+#' @param none_col The name of the NONE column. Defaults to `"NONE"`.
 #'
 #' @return A `conjoint_df`.
 #' @examples
@@ -41,7 +41,7 @@ conjoint_df <- function(data, crosswalk, none_col = "NONE") {
 
 #' @keywords internal
 new_conjoint_df <- function(data, collections, none) {
-  # conjoint_df is a subclass of collected_df: it adds the outside-good column
+  # conjoint_df is a subclass of collected_df: it adds the NONE column
   # and column protection on top of the collection metadata.
   tibble::new_tibble(
     data,

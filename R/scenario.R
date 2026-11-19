@@ -1,6 +1,6 @@
 #' Compute the total utility of a product
 #'
-#' A product is described by a [product], which selects one or more levels from
+#' A [product] is a collection of one or more levels from
 #' each collection (attribute). This function turns that description into a
 #' single utility per respondent by:
 #' 1. combining the selected levels *within* each collection into one value
@@ -56,7 +56,7 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' Applies a logit (softmax) choice model: each respondent's utility for every
 #' product is turned into a probability of choosing it, and those probabilities
 #' are averaged across respondents to give each product's mean preference share.
-#' The NONE outside good competes for share as a "choose nothing" option and is
+#' The NONE competes for share as a "choose nothing" option and is
 #' returned as a `share_NONE` column, unless a competitive set's `none`
 #' property is `FALSE`, in which case that set's products are forced to
 #' compete only against one another and no `share_NONE` column is produced for
@@ -85,7 +85,7 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' @return A tibble with one row per competitive set (named by the set's
 #'   `competitive_set` column, or `set_i` when unnamed) and one `share_*`
 #'   column per product, plus `share_NONE` for each set that includes the
-#'   outside good. A product not present in a given set's row is `NA` there.
+#'   option to buy no product. A product not present in a given set's row is `NA` there.
 #'   When `.by` is supplied, each set instead contributes one row per grouping
 #'   variable and value, carrying `group_var` (the grouping column),
 #'   `group_level` (its value, as a string), and `n` (respondents in the

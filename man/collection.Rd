@@ -7,7 +7,12 @@
 \usage{
 collection(name = character(0), levels = character(0), absence = character(0))
 
-ordered_collection(name, levels, order = unique(levels), absence = character())
+ordered_collection(
+  name,
+  levels,
+  order = unique(levels),
+  absence = character(0)
+)
 }
 \arguments{
 \item{name}{A single string naming the collection.}
@@ -16,9 +21,8 @@ ordered_collection(name, levels, order = unique(levels), absence = character())
 collection.}
 
 \item{absence}{An optional single level name marking the "absence" level of
-the collection - the level that represents having none of the feature (e.g.
-\code{"No camera"} in a \code{Camera} collection). It must be one of \code{levels}.
-Defaults to \code{character()} (no absence level).}
+the collection, the level that represents having none of the feature. It
+must be one of \code{levels}. Defaults to \code{character(0)} (no absence level).}
 
 \item{order}{For \code{ordered_collection}, a character vector giving the levels
 in their intended order. It must contain exactly the same levels as
@@ -33,6 +37,19 @@ A collection groups the columns of a \link{conjoint_df} that belong to a single
 conjoint attribute (e.g. all \code{Brand} levels). An \code{ordered_collection} is a
 collection whose levels have a meaningful order; the order is recorded by the
 order of \code{levels} (there is no enforcement of that order elsewhere yet).
+}
+\details{
+Use \code{absence} when one level means the attribute is not present at all and
+the remaining levels are versions of the feature (e.g. \code{"No camera"} alongside
+\code{"8 MP"} and \code{"12 MP"}). Leave it empty when every level is a real option,
+such as brands, where no level means "no brand". \code{absence} is a label only and
+does not change the order of the levels.
+
+Use \code{ordered_collection()} with \code{order} when the levels have a natural ranking
+that matters for interpretation or display, such as price, storage, or speed,
+and \code{levels} is not already listed in that sequence. Use \code{collection()} for
+nominal attributes with no meaningful ranking. If the absence level is the
+lowest-ranked option, place it first in \code{order}.
 }
 \examples{
 collection(name = "Brand", levels = c("Northwind", "Cascade"))

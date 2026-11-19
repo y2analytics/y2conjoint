@@ -2,7 +2,7 @@
 #'
 #' A `product` records the levels that make up a single product, grouped by
 #' collection. It is built from a flat vector of user-facing level names (any
-#' subset is allowed, including selecting several levels from one collection);
+#' subset is allowed, including selecting several levels from one collection. Levels do not need to be linked to a specific collection as levels must be unique);
 #' the levels are validated against, and grouped by, the collections of `x`.
 #'
 #' @param x A [conjoint_df] or a list of [collection]s to validate against.

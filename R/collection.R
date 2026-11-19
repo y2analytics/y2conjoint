@@ -5,13 +5,25 @@
 #' collection whose levels have a meaningful order; the order is recorded by the
 #' order of `levels` (there is no enforcement of that order elsewhere yet).
 #'
+#' @details
+#' Use `absence` when one level means the attribute is not present at all and
+#' the remaining levels are versions of the feature (e.g. `"No camera"` alongside
+#' `"8 MP"` and `"12 MP"`). Leave it empty when every level is a real option,
+#' such as brands, where no level means "no brand". `absence` is a label only and
+#' does not change the order of the levels.
+#'
+#' Use `ordered_collection()` with `order` when the levels have a natural ranking
+#' that matters for interpretation or display, such as price, storage, or speed,
+#' and `levels` is not already listed in that sequence. Use `collection()` for
+#' nominal attributes with no meaningful ranking. If the absence level is the
+#' lowest-ranked option, place it first in `order`.
+#'
 #' @param name A single string naming the collection.
 #' @param levels A character vector of the level (column) names that make up the
 #'   collection.
 #' @param absence An optional single level name marking the "absence" level of
-#'   the collection - the level that represents having none of the feature (e.g.
-#'   `"No camera"` in a `Camera` collection). It must be one of `levels`.
-#'   Defaults to `character()` (no absence level).
+#'   the collection, the level that represents having none of the feature. It
+#'   must be one of `levels`. Defaults to `character(0)` (no absence level).
 #' @param order For `ordered_collection`, a character vector giving the levels
 #'   in their intended order. It must contain exactly the same levels as
 #'   `levels`. Defaults to `unique(levels)`, i.e. the order in which `levels`
@@ -62,7 +74,7 @@ ordered_collection <- S7::new_class(
     name,
     levels,
     order = unique(levels),
-    absence = character()
+    absence = character(0)
   ) {
     S7::new_object(
       collection(name = name, levels = levels, absence = absence),

@@ -2,13 +2,13 @@
 #'
 #' Measures how a product's preference share responds to changing one level at a
 #' time. The unchanged [product] is scored on its own (against the NONE outside
-#' good) to give a `baseline` share, then each collection is perturbed
+#' good) to give a `baseline` share, then each collection is modified
 #' individually - never in combination with another collection - and re-scored:
 #'
-#' * **Single-select** collections (the default) are perturbed by replacing the
+#' * **Single-select** collections (the default) are modified by replacing the
 #'   current level with each other level in turn (`comparison = "alone"`).
 #' * **Multiple-select** collections (those named in `multiple_select`) are
-#'   perturbed by adding each not-yet-selected level (`comparison = "added_in"`)
+#'   modified by adding each not-yet-selected level (`comparison = "added_in"`)
 #'   and, when two or more levels are already selected, by removing each selected
 #'   level (`comparison = "taken_out"`).
 #'
@@ -29,10 +29,10 @@
 #' @param scaling_factor A numeric multiplier applied to all utilities before the
 #'   softmax. Passed through to [run_scenario()]. Defaults to `1`.
 #'
-#' @return A tibble with one row per perturbation and the columns:
+#' @return A tibble with one row per modification and the columns:
 #'   `Feature` (collection name), `Level` (the level added, removed, or
 #'   substituted), `comparison` (`"added_in"`, `"taken_out"`, or `"alone"`),
-#'   `preference_share` (share of the perturbed product), `baseline` (share of
+#'   `preference_share` (share of the modified product), `baseline` (share of
 #'   the unchanged product), `delta` (`preference_share - baseline`), and
 #'   `product_name`.
 #' @examples
@@ -63,7 +63,7 @@ sensitivity_analysis <- function(
   # run_scenario() now returns one row per competitive set with a leading
   # `competitive_set` column, so the product's own share must be pulled out by
   # its column name (the same name S7::set_props() below preserves across
-  # perturbations) rather than by position.
+  # modifications) rather than by position.
   product_col <- paste0("share_", product_output_names(list(product)))
 
   # The unchanged product scored on its own is the reference every delta is
@@ -75,10 +75,10 @@ sensitivity_analysis <- function(
     scaling_factor = scaling_factor
   )[[product_col]]
 
-  # Build one row per single-level perturbation, carrying the modified selection
+  # Build one row per single-level modification, carrying the modified selection
   # vector so we can re-score it below.
   grid <- purrr::map(collections, function(cl) {
-    perturb_collection(
+    modify_collection(
       cl,
       current = product@selections[[cl@name]],
       multiple_select = multiple_select
@@ -86,7 +86,7 @@ sensitivity_analysis <- function(
   })
   grid <- dplyr::bind_rows(grid)
 
-  # A product with no valid perturbations (e.g. a single-level, single-select
+  # A product with no valid modification (e.g. a single-level, single-select
   # attribute) still returns the correct empty-shaped tibble.
   if (nrow(grid) == 0) {
     return(sensitivity_tibble(grid, baseline, product_name))
@@ -110,11 +110,11 @@ sensitivity_analysis <- function(
   sensitivity_tibble(grid, baseline, product_name)
 }
 
-# Enumerate the single-level perturbations for one collection, returning a tibble
+# Enumerate the single-level modification for one collection, returning a tibble
 # of candidate rows with the modified selection vector stored in `new_levels`.
 #' @keywords internal
 #' @importFrom rlang .data .env
-perturb_collection <- function(cl, current, multiple_select) {
+modify_collection <- function(cl, current, multiple_select) {
   name <- cl@name
   levels <- collection_levels(cl)
   absence <- collection_absence(cl)
