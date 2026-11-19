@@ -399,3 +399,65 @@ sens |>
 Read this as a to-do list for the design: the changes at the extremes are where
 price, battery, or storage decisions matter most for this phone's share.
 ```
+
+## Willingness to pay
+
+Share changes are hard to compare with price. `willingness_to_pay()` translates
+them into dollars: it scores the flagship against NONE, scores a changed version
+(A') against NONE while varying its price, and finds the price at which A'
+holds the same share. The difference from the flagship's price is the premium
+respondents would pay for the change, or the discount it needs if the change
+hurts.
+
+By default every single-level change is tested, and the exact price is
+solved by interpolating each respondent's price utility between the tested
+price levels. Rows outside the tested prices are marked `extrapolated`. The
+flagship already carries the best specs, so most changes here are downgrades and
+the result is the discount that would keep its share unchanged.
+
+```{r}
+#| label: wtp
+wtp <- willingness_to_pay(cjt, flagship)
+wtp
+```
+
+Pass `alternatives` to test specific upgrades instead, as a vector of levels, a
+`product`, or a named list of either. Use `match = "closest"` or
+`match = "closest_without_going_over"` to stay on the tested price levels.
+
+```{r}
+#| label: wtp-alternatives
+willingness_to_pay(
+  cjt,
+  flagship,
+  alternatives = list(
+    Rebrand = "Northwind",
+    "Trim specs" = c("20 hours", "256 GB"),
+    Both = c("Northwind", "20 hours", "256 GB")
+  )
+)
+```
+
+Set `individual = TRUE` to get each respondent's own willingness to pay, one row
+per respondent and alternative. Individual values are noisy, so summarise them
+with medians. Respondents whose price utility rises with price somewhere (a
+reversal) are pooled to a non-increasing curve first, which keeps the match
+well defined; `price_reversal` flags them and `monotone_price = FALSE` turns the
+pooling off.
+
+```{r}
+#| label: wtp-individual
+#| warning: false
+wtp_individual <- willingness_to_pay(
+  cjt,
+  flagship,
+  individual = TRUE,
+  id = "respondent_id"
+)
+wtp_individual |>
+  summarise(
+    .by = alternative,
+    median_wtp = median(willingness_to_pay, na.rm = TRUE),
+    unmatched = sum(is.na(willingness_to_pay))
+  )
+```

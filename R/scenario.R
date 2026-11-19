@@ -270,10 +270,16 @@ scenario_shares <- function(x, products, combine_fn, scaling_factor, none) {
 
   # Convert utilities to per-respondent choice probabilities, then average
   # across respondents to get each option's mean share.
-  utilities <- do.call(cbind, product_utilities)
-  shares <- colMeans(softmax_rows(utilities))
+  shares <- mean_shares(do.call(cbind, product_utilities))
 
   format_shares(shares)
+}
+
+# Mean choice probability of each column (option) of a respondents-by-options
+# utility matrix.
+#' @keywords internal
+mean_shares <- function(utilities) {
+  colMeans(softmax_rows(utilities))
 }
 
 # Softmax: convert a matrix of utilities into row-wise choice probabilities via

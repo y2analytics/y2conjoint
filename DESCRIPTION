@@ -23,6 +23,7 @@ Imports:
     haven,
     purrr,
     rlang,
+    stats,
     tibble,
     tidyselect
 LazyData: true

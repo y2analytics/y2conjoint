@@ -25,6 +25,7 @@ export(product)
 export(protected_cols)
 export(run_scenario)
 export(sensitivity_analysis)
+export(willingness_to_pay)
 importFrom(dplyr,
   dplyr_col_modify,
   dplyr_reconstruct

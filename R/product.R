@@ -78,7 +78,12 @@ as_collections <- function(x, call = rlang::caller_env()) {
 }
 
 #' @keywords internal
-group_levels <- function(x, levels, call = rlang::caller_env()) {
+group_levels <- function(
+  x,
+  levels,
+  call = rlang::caller_env(),
+  warn_empty = TRUE
+) {
   collections <- as_collections(x, call = call)
   collection_names <- purrr::map_chr(collections, \(cl) cl@name)
   level_sets <- purrr::map(collections, collection_levels)
@@ -132,10 +137,34 @@ group_levels <- function(x, levels, call = rlang::caller_env()) {
   }
 
   empty <- collection_names[lengths(selections) == 0]
-  if (length(empty) > 0) {
+  if (warn_empty && length(empty) > 0) {
     cli::cli_warn("No levels selected for collection{?s} {.field {empty}}.")
   }
   selections
+}
+
+# Defined at top level so `product` resolves to the S7 class (not a shadowing
+# argument, as happens inside functions that take a `product`).
+#' @keywords internal
+is_product <- function(x) {
+  S7::S7_inherits(x, product)
+}
+
+#' @keywords internal
+product_display_name <- function(product) {
+  if (length(product@name) == 1 && nzchar(product@name)) {
+    product@name
+  } else {
+    "(unnamed)"
+  }
+}
+
+# Copy of `product` with one collection's selected levels replaced.
+#' @keywords internal
+set_selection <- function(product, collection, levels) {
+  selections <- product@selections
+  selections[[collection]] <- levels
+  S7::set_props(product, selections = selections)
 }
 
 # Render a product to a character vector of cli-formatted lines. Kept separate
