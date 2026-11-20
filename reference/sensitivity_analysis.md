@@ -4,7 +4,7 @@ Measures how a product's preference share responds to changing one level
 at a time. The unchanged
 [product](https://y2analytics.github.io/y2conjoint/reference/product.md)
 is scored on its own (against the NONE outside good) to give a
-`baseline` share, then each collection is perturbed individually - never
+`baseline` share, then each collection is modified individually - never
 in combination with another collection - and re-scored:
 
 ## Usage
@@ -57,21 +57,21 @@ sensitivity_analysis(
 
 ## Value
 
-A tibble with one row per perturbation and the columns: `Feature`
+A tibble with one row per modification and the columns: `Feature`
 (collection name), `Level` (the level added, removed, or substituted),
 `comparison` (`"added_in"`, `"taken_out"`, or `"alone"`),
-`preference_share` (share of the perturbed product), `baseline` (share
-of the unchanged product), `delta` (`preference_share - baseline`), and
+`preference_share` (share of the modified product), `baseline` (share of
+the unchanged product), `delta` (`preference_share - baseline`), and
 `product_name`.
 
 ## Details
 
-- **Single-select** collections (the default) are perturbed by replacing
+- **Single-select** collections (the default) are modified by replacing
   the current level with each other level in turn
   (`comparison = "alone"`).
 
 - **Multiple-select** collections (those named in `multiple_select`) are
-  perturbed by adding each not-yet-selected level
+  modified by adding each not-yet-selected level
   (`comparison = "added_in"`) and, when two or more levels are already
   selected, by removing each selected level
   (`comparison = "taken_out"`).

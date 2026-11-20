@@ -13,6 +13,8 @@
   : Compute the total utility of a product
 - [`conjoint_df()`](https://y2analytics.github.io/y2conjoint/reference/conjoint_df.md)
   : Create a conjoint data frame
+- [`crosswalk`](https://y2analytics.github.io/y2conjoint/reference/crosswalk.md)
+  : Crosswalks: mapping model columns to collections
 - [`example_crosswalk`](https://y2analytics.github.io/y2conjoint/reference/example_crosswalk.md)
   : Example conjoint crosswalk
 - [`example_utilities`](https://y2analytics.github.io/y2conjoint/reference/example_utilities.md)
@@ -23,6 +25,8 @@
   : Is a collection ordered?
 - [`product()`](https://y2analytics.github.io/y2conjoint/reference/product.md)
   : Define a product specification
+- [`product_output_names()`](https://y2analytics.github.io/y2conjoint/reference/product_output_names.md)
+  : Product names
 - [`protected_cols()`](https://y2analytics.github.io/y2conjoint/reference/protected_cols.md)
   : Protected columns of a conjoint data frame
 - [`run_scenario()`](https://y2analytics.github.io/y2conjoint/reference/run_scenario.md)

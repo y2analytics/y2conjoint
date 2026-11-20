@@ -1,9 +1,10 @@
 # Compute the total utility of a product
 
-A product is described by a
-[product](https://y2analytics.github.io/y2conjoint/reference/product.md),
-which selects one or more levels from each collection (attribute). This
-function turns that description into a single utility per respondent by:
+A
+[product](https://y2analytics.github.io/y2conjoint/reference/product.md)
+is a collection of one or more levels from each collection (attribute).
+This function turns that description into a single utility per
+respondent by:
 
 1.  combining the selected levels *within* each collection into one
     value (e.g. [`pmax()`](https://rdrr.io/r/base/Extremes.html) takes

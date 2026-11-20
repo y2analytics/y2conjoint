@@ -3,11 +3,11 @@
 Applies a logit (softmax) choice model: each respondent's utility for
 every product is turned into a probability of choosing it, and those
 probabilities are averaged across respondents to give each product's
-mean preference share. The NONE outside good competes for share as a
-"choose nothing" option and is returned as a `share_NONE` column, unless
-a competitive set's `none` property is `FALSE`, in which case that set's
-products are forced to compete only against one another and no
-`share_NONE` column is produced for it.
+mean preference share. The NONE competes for share as a "choose nothing"
+option and is returned as a `share_NONE` column, unless a competitive
+set's `none` property is `FALSE`, in which case that set's products are
+forced to compete only against one another and no `share_NONE` column is
+produced for it.
 
 ## Usage
 
@@ -68,11 +68,11 @@ run_scenario(
 A tibble with one row per competitive set (named by the set's
 `competitive_set` column, or `set_i` when unnamed) and one `share_*`
 column per product, plus `share_NONE` for each set that includes the
-outside good. A product not present in a given set's row is `NA` there.
-When `.by` is supplied, each set instead contributes one row per
-grouping variable and value, carrying `group_var` (the grouping column),
-`group_level` (its value, as a string), and `n` (respondents in the
-subgroup) alongside `competitive_set` and the `share_*` columns.
+option to buy no product. A product not present in a given set's row is
+`NA` there. When `.by` is supplied, each set instead contributes one row
+per grouping variable and value, carrying `group_var` (the grouping
+column), `group_level` (its value, as a string), and `n` (respondents in
+the subgroup) alongside `competitive_set` and the `share_*` columns.
 
 ## Examples
 
@@ -129,6 +129,11 @@ refresh <- competitive_set(
   name = "Refresh"
 )
 run_scenario(cjt, list(market, refresh))
+#> Warning: ! Product "Value" is defined differently across different competitive sets
+#> ℹ In competitive set Launch Value is defined as: Northwind, $199, 20 hours, 256
+#>   GB, Black
+#> ℹ In competitive set Refresh Value is defined as: Cascade, $299, 30 hours, 512
+#>   GB, Blue
 #> # A tibble: 2 × 4
 #>   competitive_set share_Value share_Premium share_NONE
 #>   <chr>                 <dbl>         <dbl>      <dbl>

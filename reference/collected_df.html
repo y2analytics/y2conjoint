@@ -26,6 +26,7 @@ column protection)."></head><body>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/y2analytics/y2conjoint/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -41,7 +42,7 @@ column protection)."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>A data frame carrying collections of columns</h1>
-
+      <small class="dont-index">Source: <a href="https://github.com/y2analytics/y2conjoint/blob/main/R/collected-df.R" class="external-link"><code>R/collected-df.R</code></a></small>
       <div class="d-none name"><code>collected_df.Rd</code></div>
     </div>
 
@@ -98,8 +99,7 @@ than left dangling.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     0.4     0.6</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Several collections can be passed as a vector or a list.</span></span></span>
-<span class="r-in"><span><span class="va">two</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>share_A <span class="op">=</span> <span class="fl">0.4</span>, share_B <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">collected_df</span><span class="op">(</span><span class="va">two</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="collection.html">collection</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"share_A"</span><span class="op">)</span>, <span class="fu"><a href="collection.html">collection</a></span><span class="op">(</span><span class="st">"B"</span>, <span class="st">"share_B"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">collected_df</span><span class="op">(</span><span class="va">shares</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="collection.html">collection</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"share_A"</span><span class="op">)</span>, <span class="fu"><a href="collection.html">collection</a></span><span class="op">(</span><span class="st">"B"</span>, <span class="st">"share_B"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #0000BB;">&lt;collected_df&gt;</span>: 2 collections</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> • <span style="color: #FFAF00; font-weight: bold;">A</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> • <span style="color: #FFAF00; font-weight: bold;">B</span></span>

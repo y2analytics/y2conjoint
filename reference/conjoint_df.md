@@ -37,7 +37,7 @@ conjoint_df(data, crosswalk, none_col = "NONE")
 
 - none_col:
 
-  The name of the outside-good column. Defaults to `"NONE"`.
+  The name of the NONE column. Defaults to `"NONE"`.
 
 ## Value
 

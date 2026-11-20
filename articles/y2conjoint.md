@@ -109,9 +109,9 @@ present.
 
 ### Protected columns
 
-The level columns and the `NONE` outside good are **protected**: they
-hold the utilities the whole analysis depends on, so `conjoint_df`
-guards them against accidental loss.
+The level columns and `NONE` are **protected**: they hold the utilities
+the whole analysis depends on, so `conjoint_df` guards them against
+accidental loss.
 
 ``` r
 
@@ -321,13 +321,25 @@ preference, and averages the probabilities into mean preference shares.
 ``` r
 
 launch_market <- competitive_set(
-  product(cjt, c("Northwind", "$199", "20 hours", "256 GB", "Black"), name = "Value"),
-  product(cjt, c("Cascade", "$299", "20 hours", "256 GB", "Silver"), name = "Mainstream"),
-  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(
+    cjt,
+    c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+    name = "Value"
+  ),
+  product(
+    cjt,
+    c("Cascade", "$299", "20 hours", "256 GB", "Silver"),
+    name = "Mainstream"
+  ),
+  product(
+    cjt,
+    c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+    name = "Premium"
+  ),
   name = "Launch"
 )
 
-launch_market 
+launch_market
 #> <competitive_set> Launch: 4 products: NONE, Value, Mainstream, and Premium
 #> 
 #>   NONE
@@ -407,7 +419,11 @@ co_market <- competitive_set(
     c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black"),
     name = "Co-brand"
   ),
-  product(cjt, c("Meridian", "$399", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(
+    cjt,
+    c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+    name = "Premium"
+  ),
   name = "Co_brand launch"
 )
 
@@ -491,12 +507,30 @@ against a possible refresh:
 ``` r
 
 refresh <- competitive_set(
-  product(cjt, c("Cascade", "$199", "30 hours", "512 GB", "Blue"), name = "Value"),
-  product(cjt, c("Meridian", "$299", "30 hours", "512 GB", "Black"), name = "Premium"),
+  product(
+    cjt,
+    c("Cascade", "$199", "30 hours", "512 GB", "Blue"),
+    name = "Value"
+  ),
+  product(
+    cjt,
+    c("Meridian", "$299", "30 hours", "512 GB", "Black"),
+    name = "Premium"
+  ),
   name = "Refresh"
 )
 
 comparison <- run_scenario(cjt, list(launch_market, refresh))
+#> Warning: ! Product "Premium" is defined differently across different competitive sets
+#> ℹ In competitive set Launch Premium is defined as: Meridian, $399, 30 hours,
+#>   512 GB, Black
+#> ℹ In competitive set Refresh Premium is defined as: Meridian, $299, 30 hours,
+#>   512 GB, Black
+#> Warning: ! Product "Value" is defined differently across different competitive sets
+#> ℹ In competitive set Launch Value is defined as: Northwind, $199, 20 hours, 256
+#>   GB, Black
+#> ℹ In competitive set Refresh Value is defined as: Cascade, $199, 30 hours, 512
+#>   GB, Blue
 comparison
 #> # A tibble: 2 × 5
 #>   competitive_set share_Value share_Mainstream share_Premium share_NONE
@@ -536,7 +570,7 @@ lineups.](y2conjoint_files/figure-html/multi-set-plot-1.png)
 Once you have a candidate phone, the next question is usually “which
 change would move share the most?”.
 [`sensitivity_analysis()`](https://y2analytics.github.io/y2conjoint/reference/sensitivity_analysis.md)
-perturbs a product one level at a time and reports how each change
+modifies a product one level at a time and reports how each change
 shifts preference share against a baseline.
 
 For a single-select attribute it swaps the chosen level for each
@@ -581,7 +615,7 @@ sens |>
 ```
 
 ![Tornado chart of preference-share change for each
-perturbation.](y2conjoint_files/figure-html/sensitivity-plot-1.png)
+modification.](y2conjoint_files/figure-html/sensitivity-plot-1.png)
 
 Read this as a to-do list for the design: the changes at the extremes
 are where price, battery, or storage decisions matter most for this

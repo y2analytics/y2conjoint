@@ -38,6 +38,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/y2analytics/y2conjoint/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
@@ -60,7 +61,7 @@
 
 
 
-
+      <small class="dont-index">Source: <a href="https://github.com/y2analytics/y2conjoint/blob/main/vignettes/y2conjoint.qmd" class="external-link"><code>vignettes/y2conjoint.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
     </div>
 
@@ -150,7 +151,7 @@
 <p>The print header summarizes the collections (ordered ones are annotated <code>(ordered)</code>), the outside-good column, and how many extra columns are present.</p>
 <section class="level3"><h3 id="protected-columns">Protected columns<a class="anchor" aria-label="anchor" href="#protected-columns"></a>
 </h3>
-<p>The level columns and the <code>NONE</code> outside good are <strong>protected</strong>: they hold the utilities the whole analysis depends on, so <code>conjoint_df</code> guards them against accidental loss.</p>
+<p>The level columns and <code>NONE</code> are <strong>protected</strong>: they hold the utilities the whole analysis depends on, so <code>conjoint_df</code> guards them against accidental loss.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/protected_cols.html">protected_cols</a></span><span class="op">(</span><span class="va">cjt</span><span class="op">)</span></span>
@@ -306,13 +307,25 @@
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">launch_market</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/competitive_set.html">competitive_set</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Northwind"</span>, <span class="st">"$199"</span>, <span class="st">"20 hours"</span>, <span class="st">"256 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"Value"</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cascade"</span>, <span class="st">"$299"</span>, <span class="st">"20 hours"</span>, <span class="st">"256 GB"</span>, <span class="st">"Silver"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"Mainstream"</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Meridian"</span>, <span class="st">"$399"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"Premium"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span></span>
+<span>    <span class="va">cjt</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Northwind"</span>, <span class="st">"$199"</span>, <span class="st">"20 hours"</span>, <span class="st">"256 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Value"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span></span>
+<span>    <span class="va">cjt</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cascade"</span>, <span class="st">"$299"</span>, <span class="st">"20 hours"</span>, <span class="st">"256 GB"</span>, <span class="st">"Silver"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Mainstream"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span></span>
+<span>    <span class="va">cjt</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Meridian"</span>, <span class="st">"$399"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Premium"</span></span>
+<span>  <span class="op">)</span>,</span>
 <span>  name <span class="op">=</span> <span class="st">"Launch"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">launch_market</span> </span>
+<span><span class="va">launch_market</span></span>
 <span><span class="co">#&gt; &lt;competitive_set&gt; Launch: 4 products: NONE, Value, Mainstream, and Premium</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   NONE</span></span>
@@ -376,7 +389,11 @@
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Northwind"</span>, <span class="st">"Cascade"</span>, <span class="st">"$199"</span>, <span class="st">"20 hours"</span>, <span class="st">"256 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>,</span>
 <span>    name <span class="op">=</span> <span class="st">"Co-brand"</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Meridian"</span>, <span class="st">"$399"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"Premium"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span></span>
+<span>    <span class="va">cjt</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Meridian"</span>, <span class="st">"$399"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Premium"</span></span>
+<span>  <span class="op">)</span>,</span>
 <span>  name <span class="op">=</span> <span class="st">"Co_brand launch"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -442,12 +459,30 @@
 <div class="cell">
 <div class="sourceCode cell-code" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">refresh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/competitive_set.html">competitive_set</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cascade"</span>, <span class="st">"$199"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Blue"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"Value"</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Meridian"</span>, <span class="st">"$299"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"Premium"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span></span>
+<span>    <span class="va">cjt</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Cascade"</span>, <span class="st">"$199"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Blue"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Value"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/product.html">product</a></span><span class="op">(</span></span>
+<span>    <span class="va">cjt</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Meridian"</span>, <span class="st">"$299"</span>, <span class="st">"30 hours"</span>, <span class="st">"512 GB"</span>, <span class="st">"Black"</span><span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"Premium"</span></span>
+<span>  <span class="op">)</span>,</span>
 <span>  name <span class="op">=</span> <span class="st">"Refresh"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_scenario.html">run_scenario</a></span><span class="op">(</span><span class="va">cjt</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">launch_market</span>, <span class="va">refresh</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: ! Product "Premium" is defined differently across different competitive sets</span></span>
+<span><span class="co">#&gt; ℹ In competitive set Launch Premium is defined as: Meridian, $399, 30 hours,</span></span>
+<span><span class="co">#&gt;   512 GB, Black</span></span>
+<span><span class="co">#&gt; ℹ In competitive set Refresh Premium is defined as: Meridian, $299, 30 hours,</span></span>
+<span><span class="co">#&gt;   512 GB, Black</span></span>
+<span><span class="co">#&gt; Warning: ! Product "Value" is defined differently across different competitive sets</span></span>
+<span><span class="co">#&gt; ℹ In competitive set Launch Value is defined as: Northwind, $199, 20 hours, 256</span></span>
+<span><span class="co">#&gt;   GB, Black</span></span>
+<span><span class="co">#&gt; ℹ In competitive set Refresh Value is defined as: Cascade, $199, 30 hours, 512</span></span>
+<span><span class="co">#&gt;   GB, Blue</span></span>
 <span><span class="va">comparison</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 5</span></span>
 <span><span class="co">#&gt;   competitive_set share_Value share_Mainstream share_Premium share_NONE</span></span>
@@ -480,7 +515,7 @@
 </div>
 </section><section class="level2"><h2 id="sensitivity-analysis">Sensitivity analysis<a class="anchor" aria-label="anchor" href="#sensitivity-analysis"></a>
 </h2>
-<p>Once you have a candidate phone, the next question is usually “which change would move share the most?”. <code><a href="../reference/sensitivity_analysis.html">sensitivity_analysis()</a></code> perturbs a product one level at a time and reports how each change shifts preference share against a baseline.</p>
+<p>Once you have a candidate phone, the next question is usually “which change would move share the most?”. <code><a href="../reference/sensitivity_analysis.html">sensitivity_analysis()</a></code> modifies a product one level at a time and reports how each change shifts preference share against a baseline.</p>
 <p>For a single-select attribute it swaps the chosen level for each alternative (<code>alone</code>); for an attribute you mark as multiple-select it instead adds (<code>added_in</code>) or removes (<code>taken_out</code>) a level. Here we treat <code>Brand</code> as multiple-select — modelling co-branding — and everything else as single-select:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="downlit sourceCode r">
@@ -514,7 +549,7 @@
 <span>  <span class="op">)</span></span></code></pre></div>
 <div class="cell-output-display">
 <div>
-<figure><p><img src="y2conjoint_files/figure-html/sensitivity-plot-1.png" alt="Tornado chart of preference-share change for each perturbation." width="672"></p>
+<figure><p><img src="y2conjoint_files/figure-html/sensitivity-plot-1.png" alt="Tornado chart of preference-share change for each modification." width="672"></p>
 </figure>
 </div>
 </div>
