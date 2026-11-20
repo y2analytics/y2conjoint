@@ -1,6 +1,6 @@
 #' Compute the total utility of a product
 #'
-#' A product is described by a [product], which selects one or more levels from
+#' A [product] is a collection of one or more levels from
 #' each collection (attribute). This function turns that description into a
 #' single utility per respondent by:
 #' 1. combining the selected levels *within* each collection into one value
@@ -56,7 +56,7 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' Applies a logit (softmax) choice model: each respondent's utility for every
 #' product is turned into a probability of choosing it, and those probabilities
 #' are averaged across respondents to give each product's mean preference share.
-#' The NONE outside good competes for share as a "choose nothing" option and is
+#' The NONE competes for share as a "choose nothing" option and is
 #' returned as a `share_NONE` column, unless a competitive set's `none`
 #' property is `FALSE`, in which case that set's products are forced to
 #' compete only against one another and no `share_NONE` column is produced for
@@ -85,7 +85,7 @@ compute_product_utility <- function(x, product, combine_fn = pmax) {
 #' @return A tibble with one row per competitive set (named by the set's
 #'   `competitive_set` column, or `set_i` when unnamed) and one `share_*`
 #'   column per product, plus `share_NONE` for each set that includes the
-#'   outside good. A product not present in a given set's row is `NA` there.
+#'   option to buy no product. A product not present in a given set's row is `NA` there.
 #'   When `.by` is supplied, each set instead contributes one row per grouping
 #'   variable and value, carrying `group_var` (the grouping column),
 #'   `group_level` (its value, as a string), and `n` (respondents in the
@@ -129,6 +129,7 @@ run_scenario <- function(
   .by = NULL
 ) {
   sets <- normalize_competitive_sets(competitive_set)
+  warn_inconsistent_product_definitions(sets)
   purrr::walk(sets, function(set) {
     check_products_columns(x, set@products)
   })
@@ -223,15 +224,60 @@ run_one_scenario <- function(
 #' @keywords internal
 stack_scenarios <- function(per_set, sets) {
   labeled <- purrr::imap(per_set, function(tbl, i) {
-    set <- sets[[i]]
-    name <- if (length(set@name) == 1 && nzchar(set@name)) {
-      set@name
-    } else {
-      paste0("set_", i)
-    }
-    dplyr::bind_cols(tibble::tibble(competitive_set = name), tbl)
+    dplyr::bind_cols(
+      tibble::tibble(competitive_set = get_set_name(sets[[i]], i)),
+      tbl
+    )
   })
   dplyr::bind_rows(labeled)
+}
+
+# The label used for a competitive set in output: its own name, or `set_i`
+# (1-based) when unnamed.
+#' @keywords internal
+get_set_name <- function(set, i) {
+  if (length(set@name) == 1 && nzchar(set@name)) set@name else paste0("set_", i)
+}
+
+
+#' @keywords internal
+warn_inconsistent_product_definitions <- function(sets) {
+  entries <- purrr::list_flatten(purrr::imap(sets, function(set, i) {
+    set_name <- get_set_name(set, i)
+    purrr::map2(
+      set@products,
+      product_output_names(set@products),
+      \(product, nm) {
+        list(name = nm, set_name = set_name, selections = product@selections)
+      }
+    )
+  }))
+
+  by_name <- split(entries, purrr::map_chr(entries, "name"))
+  purrr::iwalk(by_name, function(group, product_name) {
+    if (length(unique(purrr::map(group, "selections"))) < 2) {
+      return(invisible())
+    }
+
+    bullets <- purrr::map_chr(group, function(entry) {
+      levels <- paste(purrr::list_c(entry$selections), collapse = ", ")
+      paste0(
+        "In competitive set ",
+        entry$set_name,
+        " ",
+        product_name,
+        " is defined as: ",
+        levels
+      )
+    })
+    names(bullets) <- rep("i", length(bullets))
+
+    cli::cli_warn(c(
+      "!" = "Product {.val {product_name}} is defined differently across different competitive sets",
+      bullets
+    ))
+  })
+  invisible()
 }
 
 # The distinct values of a grouping column, in the order subgroups should be
@@ -310,10 +356,43 @@ resolve_combine_fn <- function(combine_fn, collection) {
   if (is.null(fn)) pmax else fn
 }
 
-# Name each product's output column after its own name, falling back to a
-# positional name (product_1, product_2, ...) for unnamed products.
-#' @keywords internal
+#' Product names
+#'
+#' Names each product after its own name, falling back to a positional name
+#' (`product_1`, `product_2`, ...) for unnamed products. These match the
+#' `share_*` columns returned by [run_scenario()].
+#'
+#' @param products A [competitive_set], a single [product], or a list of
+#'   [product]s.
+#'
+#' @return A character vector with one name per product, in order. `NONE` is
+#'   not included.
+#' @examples
+#' cjt <- conjoint_df(example_utilities, example_crosswalk)
+#' flagship <- product(
+#'   cjt,
+#'   c("Northwind", "$299", "20 hours", "256 GB", "Black"),
+#'   name = "Flagship"
+#' )
+#' budget <- product(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"))
+#'
+#' product_output_names(flagship)
+#' product_output_names(list(flagship, budget))
+#' product_output_names(competitive_set(flagship, budget))
+#' @export
 product_output_names <- function(products) {
+  if (is_competitive_set(products)) {
+    products <- products@products
+  } else if (S7::S7_inherits(products, product)) {
+    products <- list(products)
+  } else if (
+    !is.list(products) ||
+      !all(purrr::map_lgl(products, \(p) S7::S7_inherits(p, product)))
+  ) {
+    cli::cli_abort(
+      "`products` must be a competitive_set, a product, or a list of products."
+    )
+  }
   purrr::imap_chr(products, function(product, i) {
     nm <- product@name
     if (length(nm) == 1 && nzchar(nm)) nm else paste0("product_", i)

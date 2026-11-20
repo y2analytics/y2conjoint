@@ -6,7 +6,7 @@
 #' @param ... [product] objects that compete for share. Pass them individually;
 #'   they are collected into the set's `products`.
 #' @param name An optional single string naming the set.
-#' @param none Whether the NONE outside good ("choose nothing") competes for
+#' @param none Whether the NONE ("choose nothing") competes for
 #'   share alongside the set's products. Defaults to `TRUE`. Passed through to
 #'   [run_scenario()].
 #'
@@ -19,7 +19,7 @@
 #'   name = "Launch"
 #' )
 #'
-#' # Exclude the NONE outside good, forcing a choice between the products.
+#' # Exclude the NONE, forcing a choice between the products.
 #' competitive_set(
 #'   product(cjt, c("Northwind", "$299", "20 hours", "256 GB", "Black"), name = "Flagship"),
 #'   product(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"), name = "Budget"),

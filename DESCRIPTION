@@ -5,6 +5,8 @@ Authors@R:
     person("Adam", "Hubbs", , "adam@y2analytics.com", role = c("aut", "cre"))
 Description: Provides data structures and helper functions for working with conjoint survey data. 
 License: GPL (>= 3) + file LICENSE
+URL: https://github.com/y2analytics/y2conjoint, https://y2analytics.github.io/y2conjoint/
+BugReports: https://github.com/y2analytics/y2conjoint/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Suggests:

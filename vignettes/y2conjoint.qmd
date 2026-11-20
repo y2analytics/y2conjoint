@@ -91,7 +91,7 @@ The print header summarizes the collections (ordered ones are annotated
 
 ### Protected columns
 
-The level columns and the `NONE` outside good are **protected**: they hold the
+The level columns and `NONE` are **protected**: they hold the
 utilities the whole analysis depends on, so `conjoint_df` guards them against
 accidental loss.
 
@@ -323,8 +323,16 @@ co_brand <- product(
 )
 
 co_market <- competitive_set(
-  co_brand,
-  premium,
+  product(
+    cjt,
+    c("Northwind", "Cascade", "$199", "20 hours", "256 GB", "Black"),
+    name = "Co-brand"
+  ),
+  product(
+    cjt,
+    c("Meridian", "$399", "30 hours", "512 GB", "Black"),
+    name = "Premium"
+  ),
   name = "Co_brand launch"
 )
 
@@ -402,10 +410,18 @@ discontinue the mainstream product:
 
 ```{r}
 #| label: multi-set
-deprecate_mainstream <- competitive_set(
-  value,
-  premium,
-  name = "Deprecate Mainstream"
+refresh <- competitive_set(
+  product(
+    cjt,
+    c("Cascade", "$199", "30 hours", "512 GB", "Blue"),
+    name = "Value"
+  ),
+  product(
+    cjt,
+    c("Meridian", "$299", "30 hours", "512 GB", "Black"),
+    name = "Premium"
+  ),
+  name = "Refresh"
 )
 
 comparison <- run_scenario(cjt, list(launch_market, deprecate_mainstream))
@@ -457,7 +473,7 @@ to the flagship baseline, bars to the left cost share.
 
 ```{r}
 #| label: sensitivity-plot
-#| fig-alt: "Tornado chart of preference-share change for each perturbation."
+#| fig-alt: "Tornado chart of preference-share change for each modification."
 #| fig-width: 7
 #| fig-height: 4
 sens |>

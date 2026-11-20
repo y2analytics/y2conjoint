@@ -41,7 +41,7 @@ value, then the results for every selected column are stacked. Defaults to
 A tibble with one row per competitive set (named by the set's
 \code{competitive_set} column, or \code{set_i} when unnamed) and one \verb{share_*}
 column per product, plus \code{share_NONE} for each set that includes the
-outside good. A product not present in a given set's row is \code{NA} there.
+option to buy no product. A product not present in a given set's row is \code{NA} there.
 When \code{.by} is supplied, each set instead contributes one row per grouping
 variable and value, carrying \code{group_var} (the grouping column),
 \code{group_level} (its value, as a string), and \code{n} (respondents in the
@@ -51,7 +51,7 @@ subgroup) alongside \code{competitive_set} and the \verb{share_*} columns.
 Applies a logit (softmax) choice model: each respondent's utility for every
 product is turned into a probability of choosing it, and those probabilities
 are averaged across respondents to give each product's mean preference share.
-The NONE outside good competes for share as a "choose nothing" option and is
+The NONE competes for share as a "choose nothing" option and is
 returned as a \code{share_NONE} column, unless a competitive set's \code{none}
 property is \code{FALSE}, in which case that set's products are forced to
 compete only against one another and no \code{share_NONE} column is produced for
