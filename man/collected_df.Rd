@@ -36,6 +36,5 @@ shares <- tibble::tibble(share_A = 0.4, share_B = 0.6)
 collected_df(shares, collection("Launch", c("share_A", "share_B")))
 
 # Several collections can be passed as a vector or a list.
-two <- tibble::tibble(share_A = 0.4, share_B = 0.6)
-collected_df(two, c(collection("A", "share_A"), collection("B", "share_B")))
+collected_df(shares, c(collection("A", "share_A"), collection("B", "share_B")))
 }

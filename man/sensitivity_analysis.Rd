@@ -30,25 +30,25 @@ names to functions.}
 softmax. Passed through to \code{\link[=run_scenario]{run_scenario()}}. Defaults to \code{1}.}
 }
 \value{
-A tibble with one row per perturbation and the columns:
+A tibble with one row per modification and the columns:
 \code{Feature} (collection name), \code{Level} (the level added, removed, or
 substituted), \code{comparison} (\code{"added_in"}, \code{"taken_out"}, or \code{"alone"}),
-\code{preference_share} (share of the perturbed product), \code{baseline} (share of
+\code{preference_share} (share of the modified product), \code{baseline} (share of
 the unchanged product), \code{delta} (\code{preference_share - baseline}), and
 \code{product_name}.
 }
 \description{
 Measures how a product's preference share responds to changing one level at a
 time. The unchanged \link{product} is scored on its own (against the NONE outside
-good) to give a \code{baseline} share, then each collection is perturbed
+good) to give a \code{baseline} share, then each collection is modified
 individually - never in combination with another collection - and re-scored:
 }
 \details{
 \itemize{
-\item \strong{Single-select} collections (the default) are perturbed by replacing the
+\item \strong{Single-select} collections (the default) are modified by replacing the
 current level with each other level in turn (\code{comparison = "alone"}).
 \item \strong{Multiple-select} collections (those named in \code{multiple_select}) are
-perturbed by adding each not-yet-selected level (\code{comparison = "added_in"})
+modified by adding each not-yet-selected level (\code{comparison = "added_in"})
 and, when two or more levels are already selected, by removing each selected
 level (\code{comparison = "taken_out"}).
 }

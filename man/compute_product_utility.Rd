@@ -20,7 +20,7 @@ collection absent from the list falls back to \code{\link[=pmax]{pmax()}}.}
 A numeric vector, one utility per row of \code{x}.
 }
 \description{
-A product is described by a \link{product}, which selects one or more levels from
+A \link{product} is a collection of one or more levels from
 each collection (attribute). This function turns that description into a
 single utility per respondent by:
 \enumerate{
