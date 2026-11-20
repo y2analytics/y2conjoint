@@ -129,6 +129,7 @@ run_scenario <- function(
   .by = NULL
 ) {
   sets <- normalize_competitive_sets(competitive_set)
+  warn_inconsistent_product_definitions(sets)
   purrr::walk(sets, function(set) {
     check_products_columns(x, set@products)
   })
@@ -223,15 +224,60 @@ run_one_scenario <- function(
 #' @keywords internal
 stack_scenarios <- function(per_set, sets) {
   labeled <- purrr::imap(per_set, function(tbl, i) {
-    set <- sets[[i]]
-    name <- if (length(set@name) == 1 && nzchar(set@name)) {
-      set@name
-    } else {
-      paste0("set_", i)
-    }
-    dplyr::bind_cols(tibble::tibble(competitive_set = name), tbl)
+    dplyr::bind_cols(
+      tibble::tibble(competitive_set = get_set_name(sets[[i]], i)),
+      tbl
+    )
   })
   dplyr::bind_rows(labeled)
+}
+
+# The label used for a competitive set in output: its own name, or `set_i`
+# (1-based) when unnamed.
+#' @keywords internal
+get_set_name <- function(set, i) {
+  if (length(set@name) == 1 && nzchar(set@name)) set@name else paste0("set_", i)
+}
+
+
+#' @keywords internal
+warn_inconsistent_product_definitions <- function(sets) {
+  entries <- purrr::list_flatten(purrr::imap(sets, function(set, i) {
+    set_name <- get_set_name(set, i)
+    purrr::map2(
+      set@products,
+      product_output_names(set@products),
+      \(product, nm) {
+        list(name = nm, set_name = set_name, selections = product@selections)
+      }
+    )
+  }))
+
+  by_name <- split(entries, purrr::map_chr(entries, "name"))
+  purrr::iwalk(by_name, function(group, product_name) {
+    if (length(unique(purrr::map(group, "selections"))) < 2) {
+      return(invisible())
+    }
+
+    bullets <- purrr::map_chr(group, function(entry) {
+      levels <- paste(purrr::list_c(entry$selections), collapse = ", ")
+      paste0(
+        "In competitive set ",
+        entry$set_name,
+        " ",
+        product_name,
+        " is defined as: ",
+        levels
+      )
+    })
+    names(bullets) <- rep("i", length(bullets))
+
+    cli::cli_warn(c(
+      "!" = "Product {.val {product_name}} is defined differently across different competitive sets",
+      bullets
+    ))
+  })
+  invisible()
 }
 
 # The distinct values of a grouping column, in the order subgroups should be

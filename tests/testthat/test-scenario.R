@@ -269,7 +269,12 @@ test_that("run_scenario reuses a device column shared by several sets", {
     ),
     name = "Refresh"
   )
-  out <- run_scenario(cjt, list(first, second))
+  # "Value" is defined differently in each set, so this also triggers the
+  # mismatched-definition warning tested separately below.
+  expect_warning(
+    out <- run_scenario(cjt, list(first, second)),
+    "defined differently"
+  )
 
   # "Value" is shared by both sets and stays a single share_Value column; each
   # set's row holds its own share for it. "Premium" only appears in Launch, so
@@ -428,4 +433,84 @@ test_that("run_scenario rejects a list holding a non-competitive_set", {
     )
   )
   expect_error(run_scenario(cjt, list(cs, "nope")), "competitive_set")
+})
+
+test_that("run_scenario warns when a product name is defined differently across sets", {
+  cjt <- sample_conjoint()
+  launch <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "Value"
+    ),
+    name = "Launch"
+  )
+  refresh <- competitive_set(
+    product(
+      cjt,
+      c("Cascade", "$399", "30 hours", "512 GB", "Blue"),
+      name = "Value"
+    ),
+    name = "Refresh"
+  )
+  expect_snapshot(
+    . <- run_scenario(cjt, list(launch, refresh)),
+    cnd_class = TRUE
+  )
+})
+
+test_that("run_scenario stays silent when a shared product name is defined identically", {
+  cjt <- sample_conjoint()
+  launch <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "Value"
+    ),
+    name = "Launch"
+  )
+  same_again <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "Value"
+    ),
+    name = "Encore"
+  )
+  expect_no_warning(run_scenario(cjt, list(launch, same_again)))
+})
+
+test_that("run_scenario stays silent for a single competitive set", {
+  cjt <- sample_conjoint()
+  cs <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "Value"
+    ),
+    name = "Launch"
+  )
+  expect_no_warning(run_scenario(cjt, cs))
+  expect_no_warning(run_scenario(cjt, list(cs)))
+})
+
+test_that("run_scenario stays silent when distinctly-named products differ across sets", {
+  cjt <- sample_conjoint()
+  launch <- competitive_set(
+    product(
+      cjt,
+      c("Northwind", "$199", "20 hours", "256 GB", "Black"),
+      name = "A"
+    ),
+    name = "Launch"
+  )
+  refresh <- competitive_set(
+    product(
+      cjt,
+      c("Cascade", "$399", "30 hours", "512 GB", "Blue"),
+      name = "B"
+    ),
+    name = "Refresh"
+  )
+  expect_no_warning(run_scenario(cjt, list(launch, refresh)))
 })
