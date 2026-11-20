@@ -1,6 +1,8 @@
+S7::S7_on_build()
+
 .onLoad <- function(libname, pkgname) {
-  S7::methods_register()
-  # methods_register() drops plain S3 methods on the print generic, so restore
+  S7::S7_on_load()
+  # S7_on_load() drops plain S3 methods on the print generic, so restore
   # the collected_df/conjoint_df print methods afterwards.
   registerS3method(
     "print",
@@ -14,4 +16,8 @@
     print_conjoint_df,
     envir = asNamespace(pkgname)
   )
+}
+
+.onUnload <- function(libpath) {
+  S7::S7_on_unload()
 }

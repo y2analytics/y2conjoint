@@ -19,7 +19,7 @@ VignetteBuilder: quarto
 Depends:
     R (>= 4.1.0)
 Imports:
-    S7,
+    S7 (>= 1.0.0),
     cli,
     dplyr,
     haven,

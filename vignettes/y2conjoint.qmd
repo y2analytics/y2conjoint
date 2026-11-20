@@ -410,18 +410,10 @@ discontinue the mainstream product:
 
 ```{r}
 #| label: multi-set
-refresh <- competitive_set(
-  product(
-    cjt,
-    c("Cascade", "$199", "30 hours", "512 GB", "Blue"),
-    name = "Value"
-  ),
-  product(
-    cjt,
-    c("Meridian", "$299", "30 hours", "512 GB", "Black"),
-    name = "Premium"
-  ),
-  name = "Refresh"
+deprecate_mainstream <- competitive_set(
+  value,
+  premium,
+  name = "deprecate_mainstream"
 )
 
 comparison <- run_scenario(cjt, list(launch_market, deprecate_mainstream))
