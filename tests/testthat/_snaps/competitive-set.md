@@ -3,7 +3,7 @@
     Code
       competitive_set(1, 2)
     Condition
-      Error:
+      Error in `competitive_set()`:
       ! <y2conjoint::competitive_set> object is invalid:
       - @products must contain only product objects
 
@@ -42,7 +42,7 @@
     Code
       competitive_set(p, none = c(TRUE, FALSE))
     Condition
-      Error:
+      Error in `competitive_set()`:
       ! <y2conjoint::competitive_set> object is invalid:
       - @none must be a single TRUE or FALSE
 
@@ -51,7 +51,7 @@
     Code
       competitive_set(p, none = NA)
     Condition
-      Error:
+      Error in `competitive_set()`:
       ! <y2conjoint::competitive_set> object is invalid:
       - @none must be a single TRUE or FALSE
 
@@ -90,7 +90,7 @@
     Code
       competitive_set(product(brand_only, "Northwind"), product(price_only, "$249"))
     Condition
-      Error:
+      Error in `competitive_set()`:
       ! <y2conjoint::competitive_set> object is invalid:
       - all products must reference the same collections
 
