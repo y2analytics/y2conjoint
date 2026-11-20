@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-y2conjoint provides data structures and function for working with conjoint data
+y2conjoint provides data structures and function for working with conjoint data.
 
 ## Installation
 

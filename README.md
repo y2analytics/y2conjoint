@@ -9,7 +9,7 @@
 <!-- badges: end -->
 
 y2conjoint provides data structures and function for working with
-conjoint data
+conjoint data.
 
 ## Installation
 
