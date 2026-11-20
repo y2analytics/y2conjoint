@@ -356,10 +356,43 @@ resolve_combine_fn <- function(combine_fn, collection) {
   if (is.null(fn)) pmax else fn
 }
 
-# Name each product's output column after its own name, falling back to a
-# positional name (product_1, product_2, ...) for unnamed products.
-#' @keywords internal
+#' Product names
+#'
+#' Names each product after its own name, falling back to a positional name
+#' (`product_1`, `product_2`, ...) for unnamed products. These match the
+#' `share_*` columns returned by [run_scenario()].
+#'
+#' @param products A [competitive_set], a single [product], or a list of
+#'   [product]s.
+#'
+#' @return A character vector with one name per product, in order. `NONE` is
+#'   not included.
+#' @examples
+#' cjt <- conjoint_df(example_utilities, example_crosswalk)
+#' flagship <- product(
+#'   cjt,
+#'   c("Northwind", "$299", "20 hours", "256 GB", "Black"),
+#'   name = "Flagship"
+#' )
+#' budget <- product(cjt, c("Cascade", "$199", "10 hours", "128 GB", "Blue"))
+#'
+#' product_output_names(flagship)
+#' product_output_names(list(flagship, budget))
+#' product_output_names(competitive_set(flagship, budget))
+#' @export
 product_output_names <- function(products) {
+  if (is_competitive_set(products)) {
+    products <- products@products
+  } else if (S7::S7_inherits(products, product)) {
+    products <- list(products)
+  } else if (
+    !is.list(products) ||
+      !all(purrr::map_lgl(products, \(p) S7::S7_inherits(p, product)))
+  ) {
+    cli::cli_abort(
+      "`products` must be a competitive_set, a product, or a list of products."
+    )
+  }
   purrr::imap_chr(products, function(product, i) {
     nm <- product@name
     if (length(nm) == 1 && nzchar(nm)) nm else paste0("product_", i)
